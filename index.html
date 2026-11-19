@@ -37,8 +37,9 @@
     <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <!-- html2pdf -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- إنشاء PDF: html2canvas + jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- SheetJS -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
@@ -176,11 +177,92 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .spinner { width: 36px; height: 36px; border-radius: 9999px; border: 4px solid rgba(13,115,119,.15); border-top-color: #0d7377; animation: spin .8s linear infinite; }
 
+        /* ===== صفحات التقارير والسندات (A4) ===== */
+        #pdf-stage { position: fixed; left: 0; top: 0; width: 0; height: 0; overflow: hidden; z-index: -1; pointer-events: none; }
+        #printable-area { display: flex; flex-direction: column; gap: 18px; }
+        #printable-area .pdf-page { box-shadow: 0 6px 24px rgba(15,23,42,.18); }
+        .pdf-page { position: relative; box-sizing: border-box; background: #fff; color: #111827; overflow: hidden; direction: rtl; text-align: right;
+            font-family: 'Tajawal', 'IBM Plex Sans Arabic', sans-serif; font-size: 10pt; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+        .pdf-page *, .pdf-page *::before, .pdf-page *::after { box-sizing: border-box; }
+        .pdf-page.landscape { width: 297mm; height: 210mm; }
+        .pdf-page.portrait { width: 210mm; height: 297mm; }
+        .pdf-inner { position: absolute; inset: 0; padding: 10mm 11mm 7mm; display: flex; flex-direction: column; }
+        .pdf-body { flex: 1; min-height: 0; overflow: hidden; }
+        .pdf-foot { display: flex; justify-content: space-between; align-items: center; gap: 4mm; font-size: 8pt; color: #6b7280; border-top: 0.3mm solid #e5e7eb; padding-top: 2mm; margin-top: 2mm; }
+        .pdf-foot .pf-num { font-weight: 700; color: #374151; }
+        .rp-head { display: flex; align-items: center; justify-content: space-between; gap: 6mm; border-bottom: 0.7mm solid #0d7377; padding-bottom: 3mm; margin-bottom: 4mm; }
+        .rp-brand { display: flex; align-items: center; gap: 3mm; flex: 1; min-width: 0; }
+        .rp-brand img { width: 15mm; height: 15mm; border-radius: 3.5mm; flex-shrink: 0; }
+        .rp-org { font-size: 15pt; font-weight: 800; color: #0f172a; }
+        .rp-sub { font-size: 8.5pt; color: #4b5563; margin-top: 0.5mm; }
+        .rp-titlebox { text-align: center; flex-shrink: 0; }
+        .rp-title { font-size: 17pt; font-weight: 800; color: #0d7377; }
+        .rp-period { font-size: 9pt; color: #374151; font-weight: 700; margin-top: 0.8mm; }
+        .rp-meta { flex: 1; display: flex; flex-direction: column; align-items: flex-end; gap: 0.6mm; font-size: 8.5pt; }
+        .rp-meta div { display: flex; gap: 2mm; }
+        .rp-meta span { color: #6b7280; }
+        .rp-meta b { color: #111827; }
+        .rp-cont { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 0.5mm solid #0d7377; padding-bottom: 2mm; margin-bottom: 3mm; font-size: 9pt; color: #4b5563; }
+        .rp-cont b { font-size: 11pt; color: #0f172a; }
+        .rp-cards { display: flex; gap: 3mm; margin-bottom: 3.5mm; }
+        .rp-card { flex: 1; border: 0.3mm solid #d1d5db; border-radius: 2.5mm; padding: 2.2mm 3mm; text-align: center; background: #fafafa; }
+        .rp-card span { display: block; font-size: 8.5pt; color: #6b7280; }
+        .rp-card b { display: block; font-size: 13.5pt; font-weight: 800; margin-top: 0.6mm; color: #111827; }
+        .rp-card.in b { color: #047857; } .rp-card.out b { color: #be123c; }
+        .rp-card.total { background: #0d7377; border-color: #0d7377; } .rp-card.total span { color: #ccfbf1; } .rp-card.total b { color: #fff; }
+        .rp-card.neg b { color: #be123c; } .rp-card.total.neg { background: #9f1239; border-color: #9f1239; } .rp-card.total.neg b { color: #fff; }
+        .rp-filter { font-size: 8.5pt; color: #92400e; background: #fffbeb; border: 0.3mm solid #fde68a; border-radius: 2mm; padding: 1.5mm 3mm; margin-bottom: 3mm; }
+        table.rp-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8.8pt; }
+        .rp-table th { background: #0d7377; color: #fff; font-weight: 700; padding: 1.8mm 1.5mm; border: 0.3mm solid #0a5c5f; text-align: right; font-size: 8.8pt; }
+        .rp-table td { padding: 1.4mm 1.5mm; border: 0.3mm solid #e5e7eb; vertical-align: top; overflow-wrap: anywhere; }
+        .rp-table tbody tr:nth-child(even) td { background: #f8fafc; }
+        .pdf-page .c { text-align: center !important; }
+        .pdf-page .n { text-align: left !important; direction: ltr; white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 700; }
+        .pdf-page .in { color: #047857; } .pdf-page .out { color: #be123c; }
+        .rp-note { font-size: 7.8pt; color: #6b7280; margin-top: 0.5mm; }
+        .rp-carry td { background: #ecfeff !important; font-weight: 700; color: #0e7490; }
+        .rp-total td { background: #e2e8f0 !important; font-weight: 800; border-top: 0.6mm solid #0d7377; }
+        .rp-empty { text-align: center !important; color: #6b7280; padding: 6mm !important; }
+        .rp-sums { display: flex; gap: 6mm; margin-top: 5mm; }
+        .rp-sum { flex: 1; }
+        .rp-sum-title { font-size: 10pt; font-weight: 800; margin-bottom: 1.5mm; }
+        .rp-sum-title.in { color: #047857; } .rp-sum-title.out { color: #be123c; }
+        table.rp-mini { width: 100%; border-collapse: collapse; font-size: 8.8pt; }
+        .rp-mini td { padding: 1.3mm 2mm; border-bottom: 0.3mm solid #e5e7eb; }
+        .rp-mini .pct { color: #6b7280; width: 16mm; }
+        .rp-sign { display: flex; gap: 8mm; margin-top: 9mm; text-align: center; font-size: 9.5pt; }
+        .rp-sign > div { flex: 1; display: flex; flex-direction: column; align-items: center; }
+        .rp-sign em { font-style: normal; color: #6b7280; font-size: 8.5pt; margin-top: 0.5mm; }
+        .rp-sign span { display: block; width: 70%; border-bottom: 0.3mm dotted #9ca3af; margin-top: 13mm; }
+        /* السند */
+        .vp-note { text-align: center; font-size: 9pt; font-weight: 700; color: #0d7377; margin-bottom: 3mm; }
+        .vp-badge { display: inline-block; padding: 1.5mm 6mm; border-radius: 2.5mm; border: 0.6mm solid; font-size: 16pt; }
+        .vp-badge.vp-in { color: #047857; border-color: #047857; background: #ecfdf5; }
+        .vp-badge.vp-out { color: #be123c; border-color: #be123c; background: #fff1f2; }
+        .vp-amount { display: flex; align-items: center; gap: 6mm; border-radius: 3mm; padding: 4mm 5mm; margin: 4mm 0 5mm; border: 0.4mm solid; }
+        .vp-amount.vp-in { background: #ecfdf5; border-color: #a7f3d0; } .vp-amount.vp-out { background: #fff1f2; border-color: #fecdd3; }
+        .vp-amount > div:first-child { text-align: center; flex-shrink: 0; }
+        .vp-amount span { display: block; font-size: 9pt; color: #6b7280; }
+        .vp-amount b { font-size: 20pt; font-weight: 800; }
+        .vp-amount.vp-in b { color: #047857; } .vp-amount.vp-out b { color: #be123c; }
+        .vp-amount small { font-size: 10pt; }
+        .vp-words { flex: 1; font-size: 11.5pt; font-weight: 800; color: #0d7377; border-right: 0.4mm solid rgba(0,0,0,.1); padding-right: 5mm; }
+        table.vp-rows { width: 100%; border-collapse: collapse; font-size: 11pt; }
+        .vp-rows th { width: 45mm; text-align: right; color: #4b5563; font-weight: 700; padding: 3mm 0; border-bottom: 0.3mm dotted #9ca3af; vertical-align: top; }
+        .vp-rows td { padding: 3mm 0; border-bottom: 0.3mm dotted #9ca3af; font-weight: 700; overflow-wrap: anywhere; }
+        .vp-muted { color: #6b7280; font-weight: 400; }
+        .vp-sign { margin-top: 16mm; }
+        .vp-footnote { text-align: center; font-size: 8.5pt; color: #6b7280; margin-top: 10mm; border-top: 0.3mm solid #e5e7eb; padding-top: 2mm; }
+
         /* الطباعة: نطبع فقط محتوى السند/التقرير */
         #print-root { display: none; }
         @media print {
             body.print-doc > *:not(#print-root) { display: none !important; }
             body.print-doc #print-root { display: block !important; padding: 0; background: #fff; color: #111; }
+            body.print-doc #print-root .pdf-page { box-shadow: none !important; margin: 0 !important; break-after: page; page-break-after: always; }
+            body.print-doc #print-root .pdf-page:last-child { break-after: auto; page-break-after: auto; }
+            body.print-doc #print-root .pdf-page.landscape { height: 209.4mm; }
+            body.print-doc #print-root .pdf-page.portrait { height: 296.4mm; }
             body:not(.print-doc) .no-print { display: none !important; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
@@ -988,25 +1070,35 @@
                 <button type="button" onclick="closeModal('print-modal')" class="icon-btn" aria-label="إغلاق"><i class="ph-bold ph-x text-xl"></i></button>
             </div>
 
-            <div id="whatsapp-send-bar" class="hidden shrink-0 bg-emerald-50 dark:bg-emerald-500/10 border-b border-emerald-200/70 dark:border-emerald-500/20 px-5 sm:px-6 py-3.5">
-                <label class="block text-xs font-bold text-emerald-900 dark:text-emerald-200 mb-2" for="wa-recipient-phone">رقم واتساب المستلم (اتركه فارغاً لاختيار جهة الاتصال من واتساب):</label>
-                <div class="flex flex-col sm:flex-row gap-2">
+            <div id="whatsapp-send-bar" class="hidden shrink-0 bg-emerald-50 dark:bg-emerald-500/10 border-b border-emerald-200/70 dark:border-emerald-500/20 px-4 sm:px-6 py-3.5 space-y-2.5 max-h-[45vh] overflow-y-auto">
+                <div class="flex items-center gap-2">
+                    <label class="text-xs font-bold text-emerald-900 dark:text-emerald-200 shrink-0" for="wa-recipient-phone">رقم المستلم</label>
                     <div class="relative flex-1">
-                        <input type="tel" id="wa-recipient-phone" placeholder="9XXXXXXX" dir="ltr" inputmode="tel" class="field pl-16 text-right !bg-white dark:!bg-slate-900 border-emerald-200 dark:border-emerald-500/30">
+                        <input type="tel" id="wa-recipient-phone" placeholder="9XXXXXXX (اختياري)" dir="ltr" inputmode="tel" class="field !h-11 pl-16 text-right !bg-white dark:!bg-slate-900 border-emerald-200 dark:border-emerald-500/30">
                         <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-700">+968</span>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button" onclick="sendViaWhatsApp(false)" class="btn btn-income px-3"><i class="ph-bold ph-paper-plane-tilt text-lg"></i> إرسال النص</button>
-                        <button type="button" onclick="sendViaWhatsApp(true)" class="btn btn-primary px-3" title="يحمل ملف PDF ثم يفتح واتساب لإرفاقه"><i class="ph-bold ph-file-pdf text-lg"></i> PDF + واتساب</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" id="wa-share-btn" onclick="waShareFile()" class="btn btn-income col-span-2"><i class="ph-bold ph-share-network text-lg"></i> <span id="wa-share-label">مشاركة ملف PDF (واتساب...)</span></button>
+                    <button type="button" id="wa-web-btn" onclick="waDesktop('web')" class="btn btn-income"><i class="ph-bold ph-browser text-lg"></i> واتساب ويب</button>
+                    <button type="button" id="wa-app-btn" onclick="waDesktop('app')" class="btn btn-primary"><i class="ph-bold ph-desktop text-lg"></i> تطبيق واتساب للحاسب</button>
+                    <button type="button" id="wa-dl-btn" onclick="waDownloadAndOpen()" class="btn btn-primary col-span-2"><i class="ph-bold ph-file-arrow-down text-lg"></i> تحميل PDF ثم فتح واتساب</button>
+                    <button type="button" onclick="waTextOnly()" class="btn btn-ghost col-span-2 !h-10 text-[13px]"><i class="ph-bold ph-chat-text text-lg"></i> إرسال ملخص نصي فقط</button>
+                </div>
+                <p id="wa-hint" class="text-[12px] text-emerald-900/80 dark:text-emerald-200/80 leading-relaxed"></p>
+            </div>
+
+            <div id="print-viewport" class="relative flex-1 min-h-0 overflow-auto bg-slate-200/70 dark:bg-slate-950 p-3 sm:p-6">
+                <div id="print-scaler-box" class="relative mx-auto overflow-hidden">
+                    <div id="print-scaler" class="absolute top-0 left-0" style="transform-origin: top left;">
+                        <div id="printable-area" dir="rtl"></div>
                     </div>
                 </div>
             </div>
-
-            <div id="print-viewport" class="flex-1 min-h-0 overflow-auto bg-slate-100 dark:bg-slate-950 p-3 sm:p-6">
-                <div id="print-scaler-box" class="relative mx-auto bg-white rounded-xl shadow-xl overflow-hidden">
-                    <div id="print-scaler" class="absolute top-0 left-0" style="transform-origin: top left;">
-                        <div id="printable-area" dir="rtl" class="p-8 bg-white text-gray-900" style="font-family: 'Tajawal', sans-serif;"></div>
-                    </div>
+            <div id="pdf-busy" class="hidden absolute inset-0 z-20 items-center justify-center bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm">
+                <div class="card px-6 py-5 text-center shadow-xl">
+                    <div class="spinner mx-auto"></div>
+                    <p id="pdf-busy-text" class="text-sm font-bold mt-3">جاري إنشاء ملف PDF...</p>
                 </div>
             </div>
 
@@ -1014,6 +1106,23 @@
                 <button type="button" onclick="downloadCurrentAsPDF()" class="btn bg-rose-600 hover:bg-rose-500 text-white px-2"><i class="ph-bold ph-file-pdf text-lg"></i> PDF</button>
                 <button type="button" onclick="toggleWhatsAppBar()" class="btn btn-income px-2"><i class="ph-bold ph-whatsapp-logo text-lg"></i> واتساب</button>
                 <button type="button" onclick="doPrint()" class="btn bg-falaj-gold hover:bg-amber-500 text-white px-2"><i class="ph-bold ph-printer text-lg"></i> طباعة</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- تعليمات إرسال PDF عبر واتساب من الحاسب -->
+    <div id="wa-help-modal" class="modal hidden z-[65] no-print" role="dialog" aria-modal="true">
+        <div class="modal-backdrop" onclick="closeModal('wa-help-modal')"></div>
+        <div class="modal-panel sm:max-w-md">
+            <div class="sheet-handle"></div>
+            <div class="px-6 pt-8 pb-2 text-center">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 grid place-items-center text-3xl mx-auto"><i class="ph-duotone ph-whatsapp-logo"></i></div>
+                <h3 class="text-lg font-extrabold mt-3">إرسال ملف PDF عبر واتساب</h3>
+            </div>
+            <ol id="wa-help-steps" class="px-6 py-4 space-y-3 text-sm leading-relaxed"></ol>
+            <div class="modal-foot grid grid-cols-2 gap-2 border-0 bg-transparent">
+                <button type="button" onclick="downloadCurrentAsPDF()" class="btn btn-ghost"><i class="ph-bold ph-download-simple"></i> تحميل الملف مجدداً</button>
+                <button type="button" onclick="closeModal('wa-help-modal')" class="btn btn-income">تم</button>
             </div>
         </div>
     </div>
@@ -1297,6 +1406,11 @@
             return Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
         }
 
+        // تاريخ اليوم بالتوقيت المحلي (toISOString يعطي تاريخ أمس قبل الساعة 4 فجراً بتوقيت عُمان)
+        function todayLocal(d = new Date()) {
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
         function esc(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
@@ -1508,6 +1622,16 @@
 
             function convertNumber(n) {
                 if (n === 0) return "";
+                if (n >= 1000000) {
+                    const mi = Math.floor(n / 1000000);
+                    const restM = n % 1000000;
+                    let miText;
+                    if (mi === 1) miText = "مليون";
+                    else if (mi === 2) miText = "مليونان";
+                    else if (mi >= 3 && mi <= 10) miText = `${convertBelowThousand(mi)} ملايين`;
+                    else miText = `${convertBelowThousand(mi)} مليون`;
+                    return restM > 0 ? `${miText} و${convertNumber(restM)}` : miText;
+                }
                 if (n < 1000) return convertBelowThousand(n);
                 const th = Math.floor(n / 1000);
                 const rem = n % 1000;
@@ -1600,14 +1724,15 @@
                 else { totalExpense += Number(tx.amount); expenseCount++; }
             });
             const selYear = document.getElementById('filter-year').value;
-            const carried = getCarriedBalance(selYear);
+            const fState = getFilterState();
+            const carried = isPureFilter(fState) ? getPeriodCarried(fState) : 0;
             const balance = carried + totalIncome - totalExpense;
 
             const carriedRow = document.getElementById('kpi-carried-row');
             const showCarried = Math.abs(carried) > 0.0005 || Number(appState.settings.openingAmount) > 0;
             carriedRow.classList.toggle('hidden', !showCarried);
             carriedRow.classList.toggle('inline-flex', showCarried);
-            document.getElementById('kpi-carried-label').textContent = carriedLabel(selYear);
+            document.getElementById('kpi-carried-label').textContent = periodCarriedLabel(fState);
             document.getElementById('kpi-carried').textContent = formatOMR(carried);
 
             document.getElementById('kpi-income').innerHTML = `${formatOMR(totalIncome)}<span class="unit">ر.ع</span>`;
@@ -1735,7 +1860,7 @@
                     }
                     return true;
                 })
-                .sort((a, b) => new Date(b.date) - new Date(a.date));
+                .sort((a, b) => (b.date || '').localeCompare(a.date || '') || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
         }
 
         function txCardHTML(tx) {
@@ -2004,7 +2129,7 @@
             if (!can('write')) return deny();
             document.getElementById('transaction-form').reset();
             document.getElementById('tx-id').value = '';
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = todayLocal();
             document.getElementById('tx-date').value = todayStr;
             document.getElementById('tx-year').value = todayStr.split('-')[0];
 
@@ -2349,7 +2474,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `نسخة_احتياطية_${appState.settings.falajName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `نسخة_احتياطية_${appState.settings.falajName.replace(/\s+/g, '_')}_${todayLocal()}.json`;
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -2389,87 +2514,220 @@
         // =====================================================================
         // السندات والتقارير: معاينة + PDF + طباعة + واتساب
         // =====================================================================
+        // ---------- أدوات الفترة والرصيد للتقارير ----------
+        function getFilterState() {
+            return {
+                year: document.getElementById('filter-year').value,
+                type: document.getElementById('filter-type').value,
+                category: document.getElementById('filter-category').value,
+                dateFrom: document.getElementById('filter-date-from').value,
+                dateTo: document.getElementById('filter-date-to').value,
+                search: document.getElementById('filter-search').value.trim()
+            };
+        }
+
+        // هل المعاملة قبل بداية الفترة المعروضة؟ (لاحتساب الرصيد المرحّل)
+        function isBeforePeriod(tx, f) {
+            const ty = txYearOf(tx);
+            if (f.year !== 'all' && Number(ty) < Number(f.year)) return true;
+            if (f.dateFrom && (f.year === 'all' || ty === f.year) && tx.date < f.dateFrom) return true;
+            return false;
+        }
+
+        function getPeriodCarried(f = getFilterState()) {
+            let bal = openingSigned();
+            appState.transactions.forEach(tx => {
+                if (isBeforePeriod(tx, f)) bal += tx.type === 'income' ? Number(tx.amount) : -Number(tx.amount);
+            });
+            return bal;
+        }
+
+        function periodCarriedLabel(f = getFilterState()) {
+            if (f.dateFrom) return `الرصيد قبل ${f.dateFrom}`;
+            if (f.year !== 'all' && appState.transactions.some(tx => Number(txYearOf(tx)) < Number(f.year))) return `الرصيد المرحّل من ${Number(f.year) - 1}`;
+            return 'الرصيد الافتتاحي';
+        }
+
+        function periodLabel(f = getFilterState()) {
+            let label;
+            if (f.dateFrom || f.dateTo) label = `من ${f.dateFrom || 'بداية السجل'} إلى ${f.dateTo || 'تاريخه'}`;
+            else label = f.year === 'all' ? 'جميع السنوات المسجلة' : `السنة المالية ${f.year} م`;
+            if ((f.dateFrom || f.dateTo) && f.year !== 'all') label += ` — السنة المالية ${f.year}`;
+            return label;
+        }
+
+        function isPureFilter(f) { return f.type === 'all' && f.category === 'all' && !f.search; }
+
+        function sortChrono(list) {
+            return list.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '') || String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || String(a.id).localeCompare(String(b.id)));
+        }
+
+        // ---------- محرك الصفحات A4 ----------
+        let printPages = [];
+        let printDocKey = 0;
+        let pdfCache = { key: 0, blob: null, promise: null };
+
+        function getStage() {
+            let st = document.getElementById('pdf-stage');
+            if (!st) {
+                st = document.createElement('div');
+                st.id = 'pdf-stage';
+                st.setAttribute('aria-hidden', 'true');
+                document.body.appendChild(st);
+            }
+            return st;
+        }
+
+        function makePage(orient) {
+            const page = document.createElement('div');
+            page.className = `pdf-page ${orient}`;
+            page.setAttribute('dir', 'rtl');
+            page.innerHTML = '<div class="pdf-inner"><div class="pdf-body"></div><div class="pdf-foot"><span class="pf-a">&nbsp;</span><span class="pf-num">&nbsp;</span><span class="pf-b">&nbsp;</span></div></div>';
+            return page;
+        }
+
+        function htmlToEl(html) {
+            const t = document.createElement('div');
+            t.innerHTML = html.trim();
+            return t.firstElementChild;
+        }
+
+        class Paginator {
+            constructor(orient, firstHeader, contHeader) {
+                this.orient = orient;
+                this.contHeader = contHeader;
+                this.stage = getStage();
+                this.stage.innerHTML = '';
+                this.pages = [];
+                this.newPage(firstHeader);
+            }
+            overflow() { return this.body.scrollHeight > this.body.clientHeight + 1; }
+            newPage(headerHtml) {
+                const p = makePage(this.orient);
+                this.stage.appendChild(p);
+                this.body = p.querySelector('.pdf-body');
+                if (headerHtml) this.body.appendChild(htmlToEl(headerHtml));
+                this.pages.push(p);
+                this.tbody = null;
+            }
+            // كتلة لا تُقسّم (ملخص، توقيعات...) تنتقل كاملة لصفحة جديدة إن لم تتسع
+            addBlock(html) {
+                const el = htmlToEl(html);
+                this.body.appendChild(el);
+                this.tbody = null;
+                if (this.overflow() && this.body.children.length > 1) {
+                    el.remove();
+                    this.newPage(this.contHeader);
+                    this.body.appendChild(el);
+                }
+            }
+            startTable(cls, colgroup, thead) {
+                this.tCls = cls; this.tCols = colgroup; this.tHead = thead;
+                this.mkTable();
+            }
+            mkTable() {
+                const t = document.createElement('table');
+                t.className = this.tCls;
+                t.innerHTML = `${this.tCols}<thead>${this.tHead}</thead><tbody></tbody>`;
+                this.body.appendChild(t);
+                this.table = t;
+                this.tbody = t.tBodies[0];
+            }
+            // صف جدول: إن لم يتسع ينتقل لصفحة جديدة مع تكرار رؤوس الأعمدة
+            // keepWithPrev: صف الإجمالي لا يُترك وحيداً في صفحة جديدة، بل ينتقل معه آخر صف
+            addRow(html, keepWithPrev = false) {
+                if (!this.tbody) this.mkTable();
+                this.tbody.insertAdjacentHTML('beforeend', html);
+                const row = this.tbody.lastElementChild;
+                if (!this.overflow()) return;
+                const moving = [row];
+                if (keepWithPrev && this.tbody.rows.length > 2) moving.unshift(row.previousElementSibling);
+                if (this.tbody.rows.length === moving.length) this.table.remove();
+                else moving.forEach(r => r.remove());
+                this.newPage(this.contHeader);
+                this.mkTable();
+                moving.forEach(r => this.tbody.appendChild(r));
+            }
+            finish(footA, footB) {
+                const n = this.pages.length;
+                this.pages.forEach((p, i) => {
+                    p.querySelector('.pf-a').textContent = footA;
+                    p.querySelector('.pf-b').innerHTML = esc(footB).replace(/(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})/, '<bdi dir="ltr">$1</bdi>');
+                    p.querySelector('.pf-num').textContent = n > 1 ? `صفحة ${i + 1} من ${n}` : '\u00a0';
+                });
+                return this.pages;
+            }
+        }
+
+        function brandHeader(title, subtitle, metaHtml) {
+            const s = appState.settings;
+            return `
+                <div class="rp-head">
+                    <div class="rp-brand">
+                        <img src="icons/icon-192.png" alt="">
+                        <div>
+                            <div class="rp-org">${esc(s.falajName)}</div>
+                            <div class="rp-sub">${[s.location, s.wakeel ? 'الوكيل: ' + s.wakeel : '', s.phone ? 'هاتف: ' + s.phone : ''].filter(Boolean).map(esc).join(' &nbsp;|&nbsp; ')}</div>
+                        </div>
+                    </div>
+                    <div class="rp-titlebox">
+                        <div class="rp-title">${title}</div>
+                        ${subtitle ? `<div class="rp-period">${subtitle}</div>` : ''}
+                    </div>
+                    <div class="rp-meta">${metaHtml || ''}</div>
+                </div>`;
+        }
+
+        function issuedNow() {
+            const d = new Date();
+            return `${todayLocal(d)}  ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
+
+        // ---------- السند ----------
         function printVoucher(id, openWhatsAppDirectly = false) {
             const tx = appState.transactions.find(t => t.id === id);
             if (!tx) return;
             const s = appState.settings;
-
             const isIncome = tx.type === 'income';
-            const title = isIncome ? 'سند قبض مالي (وارد فلج)' : 'سند صرف مالي (مصروف فلج)';
-            const colorClass = isIncome ? 'text-emerald-800 border-emerald-700 bg-emerald-50' : 'text-rose-800 border-rose-700 bg-rose-50';
+            const title = isIncome ? 'سند قبض' : 'سند صرف';
             const amountInWords = tafqeetOMR(tx.amount);
+            const kind = isIncome ? 'in' : 'out';
 
-            const html = `
-                <div class="border-2 border-gray-800 p-6 rounded-xl relative bg-white">
-                    ${s.headerNote ? `<div class="text-center text-xs font-bold text-falaj-water mb-3 border-b border-gray-200 pb-2">${esc(s.headerNote)}</div>` : ''}
-                    <div class="flex justify-between items-center border-b-2 border-gray-300 pb-4 mb-6">
-                        <div class="flex items-center gap-3">
-                            <img src="icons/icon-192.png" alt="" style="width:56px;height:56px;border-radius:14px">
-                            <div>
-                            <h1 class="text-2xl font-extrabold text-gray-900">${esc(s.falajName)}</h1>
-                            <p class="text-sm text-gray-600">${esc(s.location)}</p>
-                            <p class="text-xs text-gray-500 mt-1">وكيل الفلج: ${esc(s.wakeel)} ${s.phone ? `| هاتف: ${esc(s.phone)}` : ''}</p>
-                            </div>
-                        </div>
-                        <div class="text-center">
-                            <span class="inline-block px-4 py-1.5 rounded-lg border-2 font-extrabold text-lg ${colorClass}">${title}</span>
-                            <p class="text-sm font-bold text-gray-700 mt-2">رقم السند: ${esc(tx.voucher || '---')}</p>
-                        </div>
+            const pg = new Paginator('portrait', null, null);
+            pg.addBlock(`
+                <div class="vp">
+                    ${s.headerNote ? `<div class="vp-note">${esc(s.headerNote)}</div>` : ''}
+                    ${brandHeader(`<span class="vp-badge vp-${kind}">${title}</span>`, isIncome ? 'وارد للفلج' : 'مصروف من الفلج', `
+                        <div><span>رقم السند</span><b>${esc(tx.voucher || '—')}</b></div>
+                        <div><span>التاريخ</span><b dir="ltr">${esc(tx.date)}</b></div>
+                        <div><span>السنة المالية</span><b>${esc(tx.year || (tx.date || '').split('-')[0])}</b></div>`)}
+
+                    <div class="vp-amount vp-${kind}">
+                        <div><span>المبلغ</span><b dir="ltr">${formatOMR(tx.amount)} <small>ر.ع</small></b></div>
+                        <div class="vp-words">${amountInWords}</div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <div>
-                            <span class="text-xs text-gray-500 block">التاريخ / السنة المالية:</span>
-                            <strong class="text-base">${esc(tx.date)} (${esc(tx.year || tx.date.split('-')[0])} م)</strong>
-                        </div>
-                        <div class="text-left">
-                            <span class="text-xs text-gray-500 block">المبلغ بالريال العُماني:</span>
-                            <strong class="text-2xl font-extrabold ${isIncome ? 'text-emerald-700' : 'text-rose-700'}" dir="ltr">${formatOMR(tx.amount)} OMR</strong>
-                        </div>
+                    <table class="vp-rows">
+                        <tr><th>${isIncome ? 'استلمنا من الفاضل' : 'صرفنا إلى الفاضل'}</th><td>${esc(tx.person || '—')}${tx.phone ? ` <span class="vp-muted" dir="ltr">(${esc(tx.phone)})</span>` : ''}</td></tr>
+                        <tr><th>البند / التصنيف</th><td>${esc(tx.category)}</td></tr>
+                        <tr><th>وذلك عن (البيان)</th><td>${esc(tx.description)}</td></tr>
+                        ${tx.notes ? `<tr><th>ملاحظات</th><td>${esc(tx.notes)}</td></tr>` : ''}
+                        ${tx.createdByName ? `<tr><th>حُرِّر بواسطة</th><td>${esc(tx.createdByName)}</td></tr>` : ''}
+                    </table>
+
+                    <div class="rp-sign vp-sign">
+                        <div><b>${isIncome ? 'توقيع الدافع' : 'توقيع المستلم'}</b><em>&nbsp;</em><span></span></div>
+                        <div><b>المحاسب / أمين الصندوق</b><em>&nbsp;</em><span></span></div>
+                        <div><b>اعتماد وكيل الفلج</b><em>${esc(s.wakeel || '')}</em><span></span></div>
                     </div>
+                    ${s.footerNote ? `<div class="vp-footnote">${esc(s.footerNote)}</div>` : ''}
+                </div>`);
+            const pages = pg.finish(s.falajName, `صدر بتاريخ ${issuedNow()}`);
 
-                    <div class="space-y-4 text-base mb-8">
-                        <div class="flex border-b border-dotted border-gray-400 pb-2">
-                            <span class="w-40 shrink-0 font-bold text-gray-600">${isIncome ? 'استلمنا من الفاضل:' : 'صرفنا إلى الفاضل:'}</span>
-                            <span class="font-bold text-gray-900">${esc(tx.person || 'غير محدد')} ${tx.phone ? `(${esc(tx.phone)})` : ''}</span>
-                        </div>
-                        <div class="flex border-b border-dotted border-gray-400 pb-2">
-                            <span class="w-40 shrink-0 font-bold text-gray-600">مبلغاً وقدره (كتابةً):</span>
-                            <span class="font-bold text-falaj-water">${amountInWords}</span>
-                        </div>
-                        <div class="flex border-b border-dotted border-gray-400 pb-2">
-                            <span class="w-40 shrink-0 font-bold text-gray-600">البند / التصنيف:</span>
-                            <span class="font-bold text-gray-900">${esc(tx.category)}</span>
-                        </div>
-                        <div class="flex border-b border-dotted border-gray-400 pb-2">
-                            <span class="w-40 shrink-0 font-bold text-gray-600">وذلك عن (البيان):</span>
-                            <span class="font-medium text-gray-900">${esc(tx.description)}</span>
-                        </div>
-                        ${tx.notes ? `
-                        <div class="flex border-b border-dotted border-gray-400 pb-2">
-                            <span class="w-40 shrink-0 font-bold text-gray-600">ملاحظات إضافية:</span>
-                            <span class="text-gray-700">${esc(tx.notes)}</span>
-                        </div>` : ''}
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-8 pt-6 mt-8 border-t border-gray-300 text-center">
-                        <div>
-                            <p class="font-bold text-gray-700 mb-10">${isIncome ? 'توقيع الدافع / المستأجر' : 'توقيع المستلم'}</p>
-                            <p class="text-gray-400">........................................</p>
-                        </div>
-                        <div>
-                            <p class="font-bold text-gray-700 mb-10">اعتماد وكيل الفلج (${esc(s.wakeel)})</p>
-                            <p class="text-gray-400">........................................</p>
-                        </div>
-                    </div>
-
-                    ${s.footerNote ? `<div class="text-center text-[11px] text-gray-500 mt-6 pt-2 border-t border-gray-100">${esc(s.footerNote)}</div>` : ''}
-                </div>`;
-
-            const waText = `*${s.falajName}* (${s.location})
+            const waText = `*${s.falajName}*${s.location ? ` (${s.location})` : ''}
 *${title}*
 ━━━━━━━━━━━━━━
-• *رقم السند:* ${tx.voucher || '---'}
+• *رقم السند:* ${tx.voucher || '—'}
 • *التاريخ:* ${tx.date}
 • *${isIncome ? 'المستلم منه' : 'المصروف له'}:* ${tx.person || 'غير محدد'}
 • *البند:* ${tx.category}
@@ -2477,155 +2735,163 @@
 • *المبلغ:* *${formatOMR(tx.amount)} ريال عُماني*
 • *التفقيط:* ${amountInWords}
 ${tx.notes ? `• *ملاحظات:* ${tx.notes}\n` : ''}━━━━━━━━━━━━━━
-إدارة وكيل الفلج: ${s.wakeel}`;
+${s.wakeel ? `وكيل الفلج: ${s.wakeel}` : ''}`;
 
             currentPrintContext = {
                 type: 'voucher',
-                title: `${isIncome ? 'سند_قبض' : 'سند_صرف'}_${tx.voucher || tx.id}`,
+                title: (tx.voucher ? `سند_${tx.voucher}` : `${isIncome ? 'سند_قبض' : 'سند_صرف'}_${tx.date || tx.id}`).replace(/[\\/:*?"<>|\s]+/g, '_'),
                 phone: tx.phone || '',
                 whatsappText: waText
             };
-
-            document.getElementById('print-modal-title').textContent = isIncome ? 'سند قبض' : 'سند صرف';
-            document.getElementById('printable-area').innerHTML = html;
+            document.getElementById('print-modal-title').textContent = title;
             document.getElementById('wa-recipient-phone').value = tx.phone || '';
-            document.getElementById('whatsapp-send-bar').classList.toggle('hidden', !openWhatsAppDirectly);
-            openPrintModal();
+            showPages(pages, 'portrait');
+            toggleWhatsAppBar(!!openWhatsAppDirectly);
         }
 
+        // ---------- التقرير المالي ----------
         function printFullReport() {
-            const filtered = getFilteredTransactions();
-            const selectedYear = document.getElementById('filter-year').value;
+            const f = getFilterState();
             const s = appState.settings;
+            const list = sortChrono(getFilteredTransactions());
+            const pure = isPureFilter(f);
+            const carried = getPeriodCarried(f);
+            const carriedLbl = periodCarriedLabel(f);
             let totalInc = 0, totalExp = 0;
-
-            const rowsHtml = filtered.map((tx, idx) => {
-                const isInc = tx.type === 'income';
-                if (isInc) totalInc += Number(tx.amount);
-                else totalExp += Number(tx.amount);
-                return `
-                    <tr class="border-b border-gray-300 text-xs">
-                        <td class="py-2 px-2">${idx + 1}</td>
-                        <td class="py-2 px-2 whitespace-nowrap">${esc(tx.date)}</td>
-                        <td class="py-2 px-2">${esc(tx.voucher || '-')}</td>
-                        <td class="py-2 px-2 font-bold ${isInc ? 'text-emerald-700' : 'text-rose-700'}">${isInc ? 'وارد' : 'مصروف'}</td>
-                        <td class="py-2 px-2">${esc(tx.category)}</td>
-                        <td class="py-2 px-2">${esc(tx.description)}</td>
-                        <td class="py-2 px-2">${esc(tx.person || '-')}</td>
-                        <td class="py-2 px-2 text-left font-bold whitespace-nowrap" dir="ltr">${isInc ? '+' : '-'}${formatOMR(tx.amount)}</td>
-                    </tr>`;
-            }).join('');
-
+            list.forEach(tx => { if (tx.type === 'income') totalInc += Number(tx.amount); else totalExp += Number(tx.amount); });
             const net = totalInc - totalExp;
-            const carried = getCarriedBalance(selectedYear);
-            const carriedLbl = carriedLabel(selectedYear);
             const closing = carried + net;
-            const todayStr = new Date().toLocaleDateString('ar-OM');
-            const periodLabel = selectedYear === 'all' ? 'كافة السنوات المسجلة' : `السنة المالية ${selectedYear} م`;
+            const period = periodLabel(f);
 
-            const html = `
-                <div class="space-y-6 bg-white">
-                    ${s.headerNote ? `<div class="text-center text-xs font-bold text-falaj-water border-b border-gray-200 pb-2">${esc(s.headerNote)}</div>` : ''}
-                    <div class="flex justify-between items-center border-b-2 border-gray-800 pb-4">
-                        <div class="flex items-center gap-3">
-                            <img src="icons/icon-192.png" alt="" style="width:56px;height:56px;border-radius:14px">
-                            <div>
-                            <h1 class="text-2xl font-extrabold text-gray-900">التقرير المالي لحسابات ${esc(s.falajName)}</h1>
-                            <p class="text-sm text-gray-600 mt-1">${esc(s.location)} | وكيل الفلج: ${esc(s.wakeel)}</p>
-                            <p class="text-xs font-bold text-falaj-water mt-1">الفترة: ${periodLabel}</p>
-                            </div>
-                        </div>
-                        <div class="text-left text-xs text-gray-600">
-                            <p>تاريخ التقرير: <strong>${todayStr}</strong></p>
-                            <p class="mt-1">العملة: <strong>الريال العُماني (ر.ع)</strong></p>
-                        </div>
-                    </div>
+            const filterNotes = [];
+            if (f.type !== 'all') filterNotes.push(f.type === 'income' ? 'الواردات فقط' : 'المصروفات فقط');
+            if (f.category !== 'all') filterNotes.push(`البند: ${f.category}`);
+            if (f.search) filterNotes.push(`بحث: «${f.search}»`);
 
-                    <div class="grid grid-cols-4 gap-4 text-center">
-                        <div class="border border-gray-300 p-3 rounded-lg bg-sky-50/50">
-                            <span class="text-xs text-gray-600 block">${carriedLbl}</span>
-                            <strong class="text-lg font-extrabold ${carried < 0 ? 'text-rose-800' : 'text-gray-900'}" dir="ltr">${formatOMR(carried)} ر.ع</strong>
-                        </div>
-                        <div class="border border-gray-300 p-3 rounded-lg bg-emerald-50/50">
-                            <span class="text-xs text-gray-600 block">إجمالي الواردات</span>
-                            <strong class="text-lg font-extrabold text-emerald-800" dir="ltr">${formatOMR(totalInc)} ر.ع</strong>
-                        </div>
-                        <div class="border border-gray-300 p-3 rounded-lg bg-rose-50/50">
-                            <span class="text-xs text-gray-600 block">إجمالي المصروفات</span>
-                            <strong class="text-lg font-extrabold text-rose-800" dir="ltr">${formatOMR(totalExp)} ر.ع</strong>
-                        </div>
-                        <div class="border border-gray-800 p-3 rounded-lg bg-gray-100">
-                            <span class="text-xs text-gray-700 block">الرصيد الختامي</span>
-                            <strong class="text-lg font-extrabold ${closing < 0 ? 'text-rose-800' : 'text-gray-900'}" dir="ltr">${formatOMR(closing)} ر.ع</strong>
-                        </div>
-                    </div>
+            const meta = `
+                <div><span>تاريخ الإصدار</span><b dir="ltr">${issuedNow()}</b></div>
+                ${currentUser ? `<div><span>أعدّه</span><b>${esc(currentUser.displayName)}</b></div>` : ''}
+                <div><span>عدد الحركات</span><b>${list.length}</b></div>`;
+            const first = brandHeader('التقرير المالي', esc(period), meta);
+            const cont = `<div class="rp-cont"><b>${esc(s.falajName)}</b><span>التقرير المالي (تابع) — ${esc(period)}</span></div>`;
+            const pg = new Paginator('landscape', first, cont);
 
-                    <table class="w-full text-right border-collapse border border-gray-300">
-                        <thead>
-                            <tr class="bg-gray-200 text-gray-800 text-xs border-b border-gray-400">
-                                <th class="py-2 px-2">#</th><th class="py-2 px-2">التاريخ</th><th class="py-2 px-2">السند</th><th class="py-2 px-2">النوع</th><th class="py-2 px-2">البند</th><th class="py-2 px-2">البيان</th><th class="py-2 px-2">الطرف الآخر</th><th class="py-2 px-2 text-left">المبلغ (ر.ع)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${rowsHtml || '<tr><td colspan="8" class="text-center py-4 text-gray-500">لا توجد بيانات</td></tr>'}
-                        </tbody>
+            // البطاقات
+            const card = (label, val, cls = '') => `<div class="rp-card ${cls}"><span>${label}</span><b dir="ltr">${formatOMR(val)}</b></div>`;
+            pg.addBlock(`<div>
+                <div class="rp-cards">
+                    ${pure ? card(esc(carriedLbl), carried, carried < 0 ? 'neg' : '') : ''}
+                    ${card('إجمالي الواردات', totalInc, 'in')}
+                    ${card('إجمالي المصروفات', totalExp, 'out')}
+                    ${pure ? card('الرصيد الختامي', closing, 'total' + (closing < 0 ? ' neg' : '')) : card('صافي الحركة', net, 'total' + (net < 0 ? ' neg' : ''))}
+                </div>
+                ${filterNotes.length ? `<div class="rp-filter">تقرير مُصفّى (${esc(filterNotes.join(' • '))}) — لا يتضمن الرصيد المرحّل ولا الرصيد التراكمي.</div>` : ''}
+            </div>`);
+
+            // الجدول مع تكرار رؤوس الأعمدة في كل صفحة
+            const cols = pure
+                ? '<colgroup><col style="width:3.5%"><col style="width:8.5%"><col style="width:10%"><col><col style="width:13%"><col style="width:13%"><col style="width:9%"><col style="width:9%"><col style="width:10%"></colgroup>'
+                : '<colgroup><col style="width:3.5%"><col style="width:9%"><col style="width:11%"><col><col style="width:15%"><col style="width:15%"><col style="width:10%"><col style="width:10%"></colgroup>';
+            const head = `<tr><th>#</th><th>التاريخ</th><th>رقم السند</th><th>البيان</th><th>البند</th><th>الطرف الآخر</th><th class="c">وارد</th><th class="c">مصروف</th>${pure ? '<th class="c">الرصيد</th>' : ''}</tr>`;
+            pg.startTable('rp-table', cols, head);
+
+            let running = carried;
+            if (pure) pg.addRow(`<tr class="rp-carry"><td></td><td></td><td></td><td colspan="3">${esc(carriedLbl)}</td><td></td><td></td><td class="n ${running < 0 ? 'out' : ''}">${formatOMR(running)}</td></tr>`);
+            if (!list.length) pg.addRow(`<tr><td colspan="${pure ? 9 : 8}" class="rp-empty">لا توجد معاملات في هذه الفترة</td></tr>`);
+            list.forEach((tx, i) => {
+                const inc = tx.type === 'income';
+                running += inc ? Number(tx.amount) : -Number(tx.amount);
+                pg.addRow(`<tr>
+                    <td class="c">${i + 1}</td>
+                    <td class="n">${esc(tx.date)}</td>
+                    <td>${esc(tx.voucher || '—')}</td>
+                    <td>${esc(tx.description)}${tx.notes ? `<div class="rp-note">${esc(tx.notes)}</div>` : ''}</td>
+                    <td>${esc(tx.category)}</td>
+                    <td>${esc(tx.person || '—')}</td>
+                    <td class="n in">${inc ? formatOMR(tx.amount) : ''}</td>
+                    <td class="n out">${inc ? '' : formatOMR(tx.amount)}</td>
+                    ${pure ? `<td class="n ${running < 0 ? 'out' : ''}">${formatOMR(running)}</td>` : ''}
+                </tr>`);
+            });
+            pg.addRow(`<tr class="rp-total"><td colspan="6">الإجمالي</td><td class="n in">${formatOMR(totalInc)}</td><td class="n out">${formatOMR(totalExp)}</td>${pure ? `<td class="n">${formatOMR(closing)}</td>` : ''}</tr>`, true);
+
+            // ملخص حسب البند
+            const byCat = (type) => {
+                const m = {};
+                list.filter(t => t.type === type).forEach(t => { m[t.category] = (m[t.category] || 0) + Number(t.amount); });
+                return Object.entries(m).sort((a, b) => b[1] - a[1]);
+            };
+            const sumTable = (title, entries, total, cls) => entries.length ? `
+                <div class="rp-sum">
+                    <div class="rp-sum-title ${cls}">${title}</div>
+                    <table class="rp-mini">
+                        ${entries.map(([k, v]) => `<tr><td>${esc(k)}</td><td class="n">${formatOMR(v)}</td><td class="n pct">${total ? ((v / total) * 100).toFixed(1) : 0}%</td></tr>`).join('')}
+                        <tr class="rp-total"><td>الإجمالي</td><td class="n">${formatOMR(total)}</td><td class="n pct">100%</td></tr>
                     </table>
+                </div>` : '';
+            const incE = byCat('income'), expE = byCat('expense');
+            if (incE.length || expE.length) {
+                pg.addBlock(`<div class="rp-sums">${sumTable('الواردات حسب البند', incE, totalInc, 'in')}${sumTable('المصروفات حسب البند', expE, totalExp, 'out')}</div>`);
+            }
 
-                    <div class="grid grid-cols-2 gap-8 pt-8 mt-8 text-center text-sm">
-                        <div>
-                            <p class="font-bold">توقيع وكيل الفلج</p>
-                            <p class="text-gray-600 mt-1">${esc(s.wakeel)}</p>
-                            <p class="mt-8 text-gray-400">........................................</p>
-                        </div>
-                        <div>
-                            <p class="font-bold">اعتماد لجنة / مجلس الفلج</p>
-                            <p class="text-gray-600 mt-1">الختم والتوقيع</p>
-                            <p class="mt-8 text-gray-400">........................................</p>
-                        </div>
-                    </div>
-                </div>`;
+            // التوقيعات
+            pg.addBlock(`<div class="rp-sign">
+                <div><b>المحاسب / أمين الصندوق</b><em>&nbsp;</em><span></span></div>
+                <div><b>وكيل الفلج</b><em>${esc(s.wakeel || '')}</em><span></span></div>
+                <div><b>اعتماد لجنة / مجلس الفلج</b><em>الختم والتوقيع</em><span></span></div>
+            </div>`);
+
+            const pages = pg.finish(`${s.falajName} — التقرير المالي`, `صدر بتاريخ ${issuedNow()}`);
 
             const waReportText = `*التقرير المالي - ${s.falajName}*
-(${s.location})
-الفترة: ${periodLabel}
+${s.location ? `(${s.location})\n` : ''}الفترة: ${period}${filterNotes.length ? `\nتصفية: ${filterNotes.join(' • ')}` : ''}
 ━━━━━━━━━━━━━━
-• *${carriedLbl}:* ${formatOMR(carried)} ر.ع
-• *إجمالي الواردات:* ${formatOMR(totalInc)} ر.ع
+${pure ? `• *${carriedLbl}:* ${formatOMR(carried)} ر.ع\n` : ''}• *إجمالي الواردات:* ${formatOMR(totalInc)} ر.ع
 • *إجمالي المصروفات:* ${formatOMR(totalExp)} ر.ع
 • *صافي حركة الفترة:* ${formatOMR(net)} ر.ع
-• *الرصيد الختامي:* *${formatOMR(closing)} ر.ع*
-• *عدد الحركات:* ${filtered.length} حركة
+${pure ? `• *الرصيد الختامي:* *${formatOMR(closing)} ر.ع*\n` : ''}• *عدد الحركات:* ${list.length}
 ━━━━━━━━━━━━━━
-وكيل الفلج: ${s.wakeel}`;
+${s.wakeel ? `وكيل الفلج: ${s.wakeel}` : ''}`;
 
             currentPrintContext = {
                 type: 'report',
-                title: `التقرير_المالي_${s.falajName.replace(/\s+/g, '_')}_${selectedYear}`,
+                title: `التقرير_المالي_${s.falajName.replace(/\s+/g, '_')}_${(f.year === 'all' ? 'كل_السنوات' : f.year)}`,
                 phone: '',
                 whatsappText: waReportText
             };
-
-            document.getElementById('print-modal-title').textContent = 'التقرير المالي';
-            document.getElementById('printable-area').innerHTML = html;
+            document.getElementById('print-modal-title').textContent = `التقرير المالي (${pages.length} ${pages.length === 1 ? 'صفحة' : pages.length === 2 ? 'صفحتان' : 'صفحات'})`;
             document.getElementById('wa-recipient-phone').value = '';
-            document.getElementById('whatsapp-send-bar').classList.add('hidden');
+            showPages(pages, 'landscape');
+            toggleWhatsAppBar(false);
+        }
+
+        // ---------- المعاينة ----------
+        function showPages(pages, orient) {
+            printPages = pages;
+            printDocKey++;
+            pdfCache = { key: printDocKey, blob: null, promise: null };
+            currentPrintContext.orient = orient;
+            const area = document.getElementById('printable-area');
+            area.innerHTML = '';
+            pages.forEach(p => area.appendChild(p.cloneNode(true)));
             openPrintModal();
         }
 
         function openPrintModal() {
             showModal('print-modal');
+            document.getElementById('print-viewport').scrollTop = 0;
             requestAnimationFrame(fitPrintPreview);
             setTimeout(fitPrintPreview, 300);
         }
 
-        // ملاءمة ورقة المعاينة لعرض الشاشة (الجوال واللوحي)
         function fitPrintPreview() {
             const viewport = document.getElementById('print-viewport');
             const box = document.getElementById('print-scaler-box');
             const scaler = document.getElementById('print-scaler');
             const area = document.getElementById('printable-area');
-            if (!viewport || !area) return;
-            const base = currentPrintContext.type === 'report' ? 1000 : 760;
+            const first = area && area.firstElementChild;
+            if (!viewport || !first) return;
+            const base = first.offsetWidth;
             area.style.width = base + 'px';
             scaler.style.width = base + 'px';
             const cs = getComputedStyle(viewport);
@@ -2636,19 +2902,22 @@ ${tx.notes ? `• *ملاحظات:* ${tx.notes}\n` : ''}━━━━━━━━
             box.style.height = (area.offsetHeight * scale) + 'px';
         }
 
+        // ---------- الطباعة ----------
         function preparePrintRoot() {
-            if (!openModals.includes('print-modal')) {
+            if (!openModals.includes('print-modal') || !printPages.length) {
                 document.body.classList.remove('print-doc');
                 return;
             }
-            document.getElementById('print-root').innerHTML = document.getElementById('printable-area').innerHTML;
+            const root = document.getElementById('print-root');
+            root.innerHTML = '';
+            printPages.forEach(p => root.appendChild(p.cloneNode(true)));
             let pageStyle = document.getElementById('page-size-style');
             if (!pageStyle) {
                 pageStyle = document.createElement('style');
                 pageStyle.id = 'page-size-style';
                 document.head.appendChild(pageStyle);
             }
-            pageStyle.textContent = `@page { size: A4 ${currentPrintContext.type === 'report' ? 'landscape' : 'portrait'}; margin: 12mm; }`;
+            pageStyle.textContent = `@page { size: A4 ${currentPrintContext.orient || 'portrait'}; margin: 0; }`;
             document.body.classList.add('print-doc');
         }
 
@@ -2657,50 +2926,181 @@ ${tx.notes ? `• *ملاحظات:* ${tx.notes}\n` : ''}━━━━━━━━
             setTimeout(() => window.print(), 50);
         }
 
-        function downloadCurrentAsPDF() {
-            const element = document.getElementById('printable-area');
-            if (typeof html2pdf === 'undefined') {
-                showToast('مكتبة PDF غير محملة، استخدم الطباعة ثم "حفظ كـ PDF"', 'info');
-                doPrint();
-                return;
+        // ---------- إنشاء PDF (صورة عالية الدقة لكل صفحة A4) ----------
+        function pdfLibsReady() { return typeof window.html2canvas === 'function' && window.jspdf && window.jspdf.jsPDF; }
+        function pdfFileName() { return `${currentPrintContext.title}.pdf`; }
+
+        async function buildPdfBlob(onProgress) {
+            if (!pdfLibsReady()) throw new Error('pdf-libs-missing');
+            if (document.fonts && document.fonts.ready) await document.fonts.ready;
+            const orient = currentPrintContext.orient || 'portrait';
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ orientation: orient, unit: 'mm', format: 'a4', compress: true });
+            const W = orient === 'landscape' ? 297 : 210, H = orient === 'landscape' ? 210 : 297;
+            for (let i = 0; i < printPages.length; i++) {
+                if (onProgress) onProgress(i + 1, printPages.length);
+                const canvas = await window.html2canvas(printPages[i], { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, scrollX: 0, scrollY: 0 });
+                if (i > 0) pdf.addPage('a4', orient);
+                pdf.addImage(canvas.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, W, H, undefined, 'FAST');
             }
-            showToast('جاري تجهيز ملف الـ PDF للتحميل...', 'info');
-            const opt = {
-                margin: [10, 10, 10, 10],
-                filename: `${currentPrintContext.title}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: currentPrintContext.type === 'report' ? 'landscape' : 'portrait' }
-            };
-            html2pdf().set(opt).from(element).save().then(() => {
-                showToast('تم تحميل ملف PDF بنجاح!', 'success');
-            }).catch(() => {
-                showToast('تعذر إنشاء PDF تلقائياً، استخدم زر الطباعة وحفظه كـ PDF', 'error');
+            pdf.setProperties({ title: currentPrintContext.title.replace(/_/g, ' '), creator: 'نظام إدارة مالية الفلج' });
+            return pdf.output('blob');
+        }
+
+        function setPdfBusy(on, text) {
+            const el = document.getElementById('pdf-busy');
+            if (!el) return;
+            el.classList.toggle('hidden', !on);
+            el.classList.toggle('flex', on);
+            if (text) document.getElementById('pdf-busy-text').textContent = text;
+        }
+
+        function ensurePdf(silent = false) {
+            if (pdfCache.blob) return Promise.resolve(pdfCache.blob);
+            if (pdfCache.promise) { if (!silent) setPdfBusy(true); return pdfCache.promise; }
+            const key = pdfCache.key;
+            if (!silent) setPdfBusy(true, 'جاري إنشاء ملف PDF...');
+            pdfCache.promise = buildPdfBlob((i, n) => {
+                const t = n > 1 ? `جاري إنشاء ملف PDF... صفحة ${i} من ${n}` : 'جاري إنشاء ملف PDF...';
+                document.getElementById('pdf-busy-text').textContent = t;
+            }).then(blob => {
+                if (pdfCache.key === key) pdfCache.blob = blob;
+                updateShareButton();
+                return blob;
+            }).finally(() => {
+                setPdfBusy(false);
+                if (pdfCache.key === key) pdfCache.promise = null;
             });
+            return pdfCache.promise;
         }
 
-        function toggleWhatsAppBar() {
+        async function downloadCurrentAsPDF() {
+            try {
+                const blob = await ensurePdf();
+                downloadBlob(blob, 'application/pdf', pdfFileName());
+                showToast('تم تحميل ملف PDF', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('تعذر إنشاء PDF. استخدم «طباعة» ثم اختر «حفظ بتنسيق PDF»', 'error');
+            }
+        }
+
+        // ---------- الإرسال عبر واتساب ----------
+        function canShareFiles() {
+            try {
+                const f = new File([new Blob(['%PDF'], { type: 'application/pdf' })], 'test.pdf', { type: 'application/pdf' });
+                return !!(navigator.canShare && navigator.share && navigator.canShare({ files: [f] }));
+            } catch (e) { return false; }
+        }
+        function isDesktopDevice() { return !window.matchMedia('(pointer: coarse)').matches; }
+
+        function waPhone() {
+            let raw = document.getElementById('wa-recipient-phone').value.trim().replace(/[\s\-()]/g, '').replace(/^(\+|00)/, '');
+            if (!raw) return '';
+            if (!raw.startsWith('968') && raw.length === 8) raw = '968' + raw;
+            return raw.replace(/\D/g, '');
+        }
+
+        function toggleWhatsAppBar(force) {
             const bar = document.getElementById('whatsapp-send-bar');
-            bar.classList.toggle('hidden');
-            if (!bar.classList.contains('hidden') && window.matchMedia('(min-width: 640px)').matches) {
-                document.getElementById('wa-recipient-phone').focus();
+            const show = typeof force === 'boolean' ? force : bar.classList.contains('hidden');
+            bar.classList.toggle('hidden', !show);
+            if (!show) return;
+            const share = canShareFiles(), desktop = isDesktopDevice();
+            document.getElementById('wa-share-btn').classList.toggle('hidden', !share);
+            document.getElementById('wa-web-btn').classList.toggle('hidden', !desktop);
+            document.getElementById('wa-app-btn').classList.toggle('hidden', !desktop);
+            document.getElementById('wa-dl-btn').classList.toggle('hidden', desktop || share);
+            document.getElementById('wa-hint').innerHTML = desktop
+                ? '<i class="ph-bold ph-info"></i> على الحاسب: يُحمَّل ملف PDF ويُفتح واتساب على المحادثة، ثم اسحب الملف إليها أو أرفقه من 📎. اكتب رقم المستلم لفتح محادثته مباشرة.'
+                : (share ? '<i class="ph-bold ph-info"></i> «مشاركة ملف PDF» تفتح قائمة المشاركة: اختر واتساب ثم المحادثة، وسيُرفق الملف تلقائياً.' : '<i class="ph-bold ph-info"></i> يُحمَّل الملف ثم يُفتح واتساب، وأرفقه من 📎 ← مستند.');
+            updateShareButton();
+            // تجهيز الملف مسبقاً في الخلفية ليكون جاهزاً للمشاركة فوراً
+            if (pdfLibsReady()) ensurePdf(true).catch(() => {});
+        }
+
+        function updateShareButton() {
+            const lbl = document.getElementById('wa-share-label');
+            if (!lbl) return;
+            lbl.textContent = pdfCache.blob ? 'مشاركة ملف PDF (واتساب...)' : 'جاري تجهيز الملف...';
+        }
+
+        async function waShareFile() {
+            if (!pdfCache.blob) {
+                try { await ensurePdf(); } catch (e) { showToast('تعذر إنشاء ملف PDF', 'error'); return; }
+            }
+            const file = new File([pdfCache.blob], pdfFileName(), { type: 'application/pdf' });
+            try {
+                await navigator.share({ files: [file], title: currentPrintContext.title.replace(/_/g, ' '), text: currentPrintContext.whatsappText });
+            } catch (err) {
+                if (err && err.name === 'AbortError') return;
+                if (err && err.name === 'NotAllowedError') { showToast('الملف جاهز — اضغط «مشاركة ملف PDF» مرة أخرى', 'info'); return; }
+                // بعض التطبيقات ترفض النص مع الملف: نعيد المحاولة بالملف فقط
+                try { await navigator.share({ files: [file] }); }
+                catch (e2) { if (e2.name !== 'AbortError') showToast('تعذرت المشاركة، استخدم «تحميل PDF» ثم أرفقه يدوياً', 'error'); }
             }
         }
 
-        function sendViaWhatsApp(downloadPdfFirst = false) {
-            let rawPhone = document.getElementById('wa-recipient-phone').value.trim().replace(/\s+/g, '');
-            let fullPhone = '';
-            if (rawPhone) {
-                rawPhone = rawPhone.replace(/^(\+|00)/, '');
-                fullPhone = (!rawPhone.startsWith('968') && rawPhone.length === 8) ? '968' + rawPhone : rawPhone;
+        async function copyWaText() {
+            try { await navigator.clipboard.writeText(currentPrintContext.whatsappText); return true; } catch (e) { return false; }
+        }
+
+        function openWaHelp(mode, phone, copied) {
+            const steps = [
+                `تم تحميل الملف <b>${esc(pdfFileName())}</b> في مجلد «التنزيلات».`,
+                mode === 'app' ? 'سيفتح تطبيق واتساب على الحاسب (إن كان مثبّتاً).' : 'فُتح واتساب ويب في نافذة جديدة (امسح رمز QR من هاتفك إن طُلب ذلك أول مرة).',
+                phone ? 'ستُفتح محادثة المستلم والنص جاهز للإرسال.' : (copied ? 'اختر المحادثة، ثم الصق النص الجاهز بـ <b>Ctrl + V</b> (نُسخ تلقائياً).' : 'اختر المحادثة المطلوبة.'),
+                'لإرفاق الملف: اسحبه من التنزيلات إلى المحادثة، أو اضغط 📎 ← «مستند» واختره.'
+            ];
+            document.getElementById('wa-help-steps').innerHTML = steps.map((t, i) => `<li class="flex gap-3"><span class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 grid place-items-center font-bold text-sm shrink-0">${i + 1}</span><span class="pt-0.5">${t}</span></li>`).join('');
+            showModal('wa-help-modal');
+        }
+
+        // الحاسب: واتساب ويب أو تطبيق واتساب لسطح المكتب
+        async function waDesktop(mode) {
+            const phone = waPhone();
+            const text = encodeURIComponent(currentPrintContext.whatsappText);
+            const copied = phone ? false : await copyWaText();
+            const webUrl = phone ? `https://web.whatsapp.com/send?phone=${phone}&text=${text}` : 'https://web.whatsapp.com/';
+            const appUrl = `whatsapp://send?${phone ? `phone=${phone}&` : ''}text=${text}`;
+            let win = null;
+            if (mode === 'web' && !pdfCache.blob) {
+                win = window.open('', '_blank');
+                if (win) win.document.write('<p dir="rtl" style="font-family:Tahoma,sans-serif;padding:40px;font-size:18px">جاري تجهيز ملف PDF وفتح واتساب ويب…</p>');
             }
-            if (downloadPdfFirst) {
-                downloadCurrentAsPDF();
-                showToast('تم تحميل ملف PDF، أرفقه في محادثة الواتساب التي ستفتح الآن', 'info');
+            try {
+                const blob = await ensurePdf();
+                downloadBlob(blob, 'application/pdf', pdfFileName());
+                if (mode === 'web') {
+                    if (win) win.location.href = webUrl;
+                    else if (!window.open(webUrl, '_blank')) showToast('المتصفح منع فتح نافذة واتساب ويب — اسمح بالنوافذ المنبثقة', 'error');
+                } else {
+                    window.location.href = appUrl;
+                }
+                openWaHelp(mode, phone, copied);
+            } catch (err) {
+                if (win) win.close();
+                console.error(err);
+                showToast('تعذر إنشاء ملف PDF', 'error');
             }
-            const encodedText = encodeURIComponent(currentPrintContext.whatsappText);
-            const waUrl = fullPhone ? `https://wa.me/${fullPhone}?text=${encodedText}` : `https://wa.me/?text=${encodedText}`;
-            setTimeout(() => { window.open(waUrl, '_blank'); }, downloadPdfFirst ? 900 : 100);
+        }
+
+        // الجوال بدون دعم المشاركة: تحميل ثم فتح واتساب
+        async function waDownloadAndOpen() {
+            const phone = waPhone();
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(currentPrintContext.whatsappText)}`;
+            const win = pdfCache.blob ? null : window.open('', '_blank');
+            try {
+                const blob = await ensurePdf();
+                downloadBlob(blob, 'application/pdf', pdfFileName());
+                if (win) win.location.href = url; else window.open(url, '_blank');
+            } catch (e) { if (win) win.close(); showToast('تعذر إنشاء ملف PDF', 'error'); }
+        }
+
+        function waTextOnly() {
+            const phone = waPhone();
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(currentPrintContext.whatsappText)}`;
+            if (!window.open(url, '_blank')) window.location.href = url;
         }
 
         // =====================================================================
@@ -2748,7 +3148,15 @@ ${tx.notes ? `• *ملاحظات:* ${tx.notes}\n` : ''}━━━━━━━━
 
             if (typeof XLSX !== 'undefined') {
                 const worksheet = XLSX.utils.json_to_sheet(rows);
-                worksheet['!cols'] = [{ wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 30 }, { wch: 15 }, { wch: 24 }, { wch: 14 }, { wch: 38 }, { wch: 25 }];
+                const tIn = filtered.filter(t => t.type === 'income').reduce((x, t) => x + Number(t.amount), 0);
+                const tOut = filtered.filter(t => t.type === 'expense').reduce((x, t) => x + Number(t.amount), 0);
+                XLSX.utils.sheet_add_aoa(worksheet, [
+                    [],
+                    ['إجمالي الواردات', '', '', '', '', Number(tIn.toFixed(3))],
+                    ['إجمالي المصروفات', '', '', '', '', Number(tOut.toFixed(3))],
+                    ['صافي الحركة', '', '', '', '', Number((tIn - tOut).toFixed(3))]
+                ], { origin: -1 });
+                worksheet['!cols'] = [{ wch: 16 }, { wch: 8 }, { wch: 14 }, { wch: 10 }, { wch: 30 }, { wch: 15 }, { wch: 24 }, { wch: 14 }, { wch: 38 }, { wch: 25 }];
                 const workbook = XLSX.utils.book_new();
                 workbook.Workbook = { Views: [{ RTL: true }] };
                 XLSX.utils.book_append_sheet(workbook, worksheet, "سجل الفلج");
@@ -2829,9 +3237,18 @@ ${tx.notes ? `• *ملاحظات:* ${tx.notes}\n` : ''}━━━━━━━━
                         let dateStr = "";
                         const rawDate = row["التاريخ"] || row["تاريخ الحركة"];
                         if (rawDate instanceof Date && !isNaN(rawDate)) {
-                            dateStr = rawDate.toISOString().split('T')[0];
+                            // تصحيح فرق التوقيت: Excel يحفظ التاريخ منتصف الليل وقد يتحول ليوم سابق
+                            const fixed = new Date(rawDate.getTime() + 12 * 3600 * 1000);
+                            dateStr = todayLocal(fixed);
+                        } else if (typeof rawDate === 'number' && rawDate > 20000 && rawDate < 80000) {
+                            const d = new Date(Date.UTC(1899, 11, 30) + rawDate * 86400000);
+                            dateStr = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
                         } else if (typeof rawDate === 'string' && rawDate.trim()) {
-                            dateStr = rawDate.trim().replace(/\//g, '-').split('T')[0];
+                            const t = rawDate.trim().replace(/[\/.]/g, '-').split('T')[0].split(' ')[0];
+                            let m;
+                            if ((m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) dateStr = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+                            else if ((m = t.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/))) dateStr = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`; // يوم/شهر/سنة
+                            else dateStr = t;
                         } else {
                             const yr = row["السنة"] || new Date().getFullYear();
                             dateStr = `${yr}-01-01`;
