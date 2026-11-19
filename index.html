@@ -271,7 +271,7 @@
 <body class="min-h-screen bg-falaj-sand dark:bg-slate-950 text-slate-800 dark:text-slate-100 antialiased selection:bg-falaj-water/20">
 
     <!-- الإشعارات -->
-    <div id="toast-container" class="fixed z-[80] inset-x-3 sm:inset-x-auto sm:left-6 sm:bottom-6 flex flex-col gap-2 items-center sm:items-start pointer-events-none no-print" style="top: max(env(safe-area-inset-top), 12px);"></div>
+    <div id="toast-container" class="fixed z-[100] inset-x-3 sm:inset-x-auto sm:left-6 sm:bottom-6 flex flex-col gap-2 items-center sm:items-start pointer-events-none no-print" style="top: max(env(safe-area-inset-top), 12px);"></div>
 
     <!-- منطقة الطباعة الخفية -->
     <div id="print-root" dir="rtl"></div>
@@ -305,7 +305,7 @@
                             <button type="button" onclick="const i=document.getElementById('login-password'); i.type = i.type==='password' ? 'text' : 'password';" class="absolute left-1 top-1/2 -translate-y-1/2 icon-btn !w-10 !h-10" aria-label="إظهار كلمة المرور"><i class="ph-bold ph-eye text-lg"></i></button>
                         </div>
                         <button type="submit" id="login-submit" class="btn btn-primary w-full"><i class="ph-bold ph-sign-in text-lg"></i> دخول</button>
-                        <button type="button" onclick="forgotPassword()" class="block mx-auto text-[13px] font-bold text-falaj-water dark:text-teal-300 hover:underline cursor-pointer">نسيت كلمة المرور؟</button>
+                        <button type="button" id="forgot-btn" onclick="forgotPassword()" class="block mx-auto disabled:opacity-50 text-[13px] font-bold text-falaj-water dark:text-teal-300 hover:underline cursor-pointer">نسيت كلمة المرور؟</button>
                     </form>
                     <p id="gate-error" class="hidden text-[13px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 rounded-xl p-3 leading-relaxed"></p>
                 </div>
@@ -3412,7 +3412,7 @@ ${s.wakeel ? `وكيل الفلج: ${s.wakeel}` : ''}`;
         // =====================================================================
         // قاعدة البيانات المشتركة: المصادقة والصلاحيات والمزامنة (Firebase)
         // =====================================================================
-        const APP_VERSION = '2.1.1';
+        const APP_VERSION = '2.1.2';
         document.querySelectorAll('.js-app-version').forEach(el => el.textContent = APP_VERSION);
         const OWNER_EMAILS = ['falajbutin@gmail.com', 'hrhalyzeedi@gmail.com'];
         const ROLE_LABELS = { admin: 'مدير النظام', accountant: 'محاسب', viewer: 'مُطّلع' };
@@ -3457,10 +3457,12 @@ ${s.wakeel ? `وكيل الفلج: ${s.wakeel}` : ''}`;
             else if (!openModals.length) document.body.classList.remove('overflow-hidden');
         }
 
-        function gateError(msg) {
+        function gateError(msg, kind = 'error') {
             const el = document.getElementById('gate-error');
-            el.textContent = msg;
-            el.classList.remove('hidden');
+            el.innerHTML = kind === 'error' ? esc(msg) : msg;
+            el.className = kind === 'success'
+                ? 'text-[13px] font-bold text-emerald-800 dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl p-3 leading-relaxed'
+                : 'text-[13px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 rounded-xl p-3 leading-relaxed';
         }
 
         function authErrorMessage(err) {
@@ -3501,13 +3503,30 @@ ${s.wakeel ? `وكيل الفلج: ${s.wakeel}` : ''}`;
             } finally { btn.disabled = false; }
         }
 
+        let resetCooldownUntil = 0;
         async function forgotPassword() {
-            const email = document.getElementById('login-email').value.trim();
-            if (!email) { gateError('اكتب بريدك الإلكتروني في الحقل أعلاه أولاً، ثم اضغط «نسيت كلمة المرور».'); return; }
+            const email = document.getElementById('login-email').value.trim().toLowerCase();
+            if (!email) { gateError('اكتب بريدك الإلكتروني في الحقل أعلاه أولاً، ثم اضغط «نسيت كلمة المرور».'); document.getElementById('login-email').focus(); return; }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { gateError('صيغة البريد الإلكتروني غير صحيحة.'); return; }
+            if (!fbReady) { gateError('جاري الاتصال بالخادم، حاول بعد لحظات.'); return; }
+            const wait = Math.ceil((resetCooldownUntil - Date.now()) / 1000);
+            if (wait > 0) { gateError(`أُرسل الرابط قبل قليل. يمكنك طلبه مرة أخرى بعد ${wait} ثانية.`); return; }
+            const btn = document.getElementById('forgot-btn');
+            btn.disabled = true;
+            btn.textContent = 'جاري الإرسال...';
             try {
                 await FB.resetPassword(email);
-                showToast('أُرسل رابط إعادة تعيين كلمة المرور إلى بريدك (تحقق من البريد المزعج أيضاً)', 'success');
-            } catch (err) { gateError(authErrorMessage(err)); }
+                resetCooldownUntil = Date.now() + 60000;
+                gateError(`<i class="ph-fill ph-envelope-simple-open text-lg align-middle"></i> تم إرسال رابط إعادة تعيين كلمة المرور إلى <b dir="ltr">${esc(email)}</b>.<br>
+                    افتح بريدك واضغط الرابط، ثم اكتب كلمة مرور جديدة وارجع لتسجيل الدخول.<br>
+                    <span class="font-normal">• إن لم تصلك الرسالة خلال دقائق فتحقق من مجلد <b>البريد المزعج (Spam)</b>.<br>
+                    • الرابط يصل فقط للحسابات المسجّلة بالبريد وكلمة المرور. إن كان حسابك بـ Google فاستخدم زر «الدخول بحساب Google».</span>`, 'success');
+            } catch (err) {
+                gateError(authErrorMessage(err));
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'نسيت كلمة المرور؟';
+            }
         }
 
         async function signOutUser() {
