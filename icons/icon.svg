@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="#16a99f"/><stop offset=".5" stop-color="#0d7377"/><stop offset="1" stop-color="#073c3f"/></linearGradient></defs>
+  <rect width="512" height="512" rx="116" fill="url(#g)"/>
+  <circle cx="338" cy="150" r="58" fill="#e9c46a" opacity=".22"/>
+  <circle cx="338" cy="150" r="38" fill="#e9c46a" opacity=".35"/>
+  <!-- الجذع -->
+  <path d="M247 200 Q232 292 244 376 L270 376 Q258 292 265 200 Z" fill="#c8963e"/>
+  <g stroke="#8a6326" stroke-width="5" stroke-linecap="round" opacity=".55">
+    <path d="M242 236 L262 232"/><path d="M239 266 L260 262"/><path d="M238 296 L259 292"/><path d="M239 326 L261 322"/><path d="M241 354 L264 351"/>
+  </g>
+  <!-- السعف -->
+  <g fill="#f3d98b">
+    <path d="M256 192 Q194 146 118 176 Q196 164 256 200 Z"/>
+    <path d="M256 192 Q318 146 394 176 Q316 164 256 200 Z"/>
+    <path d="M256 190 Q216 114 150 104 Q220 134 256 198 Z"/>
+    <path d="M256 190 Q296 114 362 104 Q292 134 256 198 Z"/>
+    <path d="M256 188 Q248 124 270 74 Q264 136 262 196 Z"/>
+    <path d="M256 198 Q196 200 146 252 Q206 210 258 204 Z"/>
+    <path d="M256 198 Q316 200 366 252 Q306 210 254 204 Z"/>
+  </g>
+  <circle cx="256" cy="198" r="10" fill="#c8963e"/>
+  <!-- ساقية الفلج -->
+  <path d="M84 372 H428 L408 440 Q404 452 392 452 H120 Q108 452 104 440 Z" fill="#073c3f" opacity=".55"/>
+  <path d="M84 372 H428" stroke="#f5f3ee" stroke-width="10" stroke-linecap="round" opacity=".9"/>
+  <g fill="none" stroke-linecap="round" stroke-width="10">
+    <path d="M120 400 q17 -12 34 0 t34 0 t34 0 t34 0 t34 0 t34 0 t34 0 t34 0" stroke="#7fe0d6"/>
+    <path d="M136 426 q16 -11 32 0 t32 0 t32 0 t32 0 t32 0 t32 0 t32 0" stroke="#ffffff" opacity=".85"/>
+  </g>
+</svg>

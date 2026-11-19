@@ -1,0 +1,42 @@
+{
+  "id": "./",
+  "name": "نظام إدارة مالية الفلج",
+  "short_name": "مالية الفلج",
+  "description": "نظام الإدارة المالية للأفلاج العُمانية: الواردات والمصروفات، السندات، التقارير، PDF وواتساب",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f5f3ee",
+  "theme_color": "#0d7377",
+  "categories": ["finance", "productivity", "business"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    {
+      "name": "إضافة وارد",
+      "short_name": "وارد",
+      "url": "./?action=income",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "إضافة مصروف",
+      "short_name": "مصروف",
+      "url": "./?action=expense",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    { "src": "screenshots/mobile-home.png", "sizes": "390x844", "type": "image/png", "form_factor": "narrow", "label": "لوحة التحكم" },
+    { "src": "screenshots/mobile-records.png", "sizes": "390x844", "type": "image/png", "form_factor": "narrow", "label": "سجل المعاملات" },
+    { "src": "screenshots/desktop-home.png", "sizes": "1280x800", "type": "image/png", "form_factor": "wide", "label": "لوحة التحكم على الشاشات الكبيرة" }
+  ]
+}
