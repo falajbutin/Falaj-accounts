@@ -318,6 +318,7 @@
                 </div>
 
                 <p class="text-center text-xs text-slate-400 mt-6 flex items-center justify-center gap-1"><i class="ph ph-shield-check"></i> البيانات محمية ولا يطّلع عليها إلا المستخدمون المصرّح لهم</p>
+                <p class="text-center text-[11px] text-slate-400 mt-1">الإصدار <span class="js-app-version" dir="ltr"></span></p>
             </div>
         </div>
     </div>
@@ -660,7 +661,7 @@
                         تُحفظ المعاملات في قاعدة بيانات سحابية مشتركة بين المستخدمين المصرّح لهم فقط، وتتزامن لحظياً. عند انقطاع الإنترنت تُحفظ على الجهاز وتُرفع تلقائياً عند عودة الاتصال.
                     </div>
                 </div>
-                <p class="text-center text-xs text-slate-400 pb-2">نظام إدارة مالية الأفلاج العُمانية • اختصار الإعدادات: Alt + S</p>
+                <p class="text-center text-xs text-slate-400 pb-2">نظام إدارة مالية الأفلاج العُمانية • الإصدار <b class="js-app-version" dir="ltr"></b></p>
             </section>
         </main>
     </div>
@@ -1166,6 +1167,7 @@
                 <p class="text-sm text-slate-500 dark:text-slate-400 js-user-email" dir="ltr"></p>
                 <span class="inline-block mt-2 text-xs font-bold px-3 py-1 rounded-full bg-falaj-water/10 text-falaj-water dark:text-teal-300 js-user-role"></span>
                 <p id="sync-status" class="text-xs mt-3 flex items-center justify-center gap-1.5 text-slate-500"></p>
+                <p class="text-[11px] mt-1 text-slate-400">إصدار التطبيق <b class="js-app-version" dir="ltr"></b></p>
             </div>
             <div class="px-5 pb-2 space-y-1.5">
                 <button type="button" onclick="closeModal('account-modal'); openSettingsModal();" class="req-admin w-full flex items-center gap-3 h-12 px-4 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm cursor-pointer"><i class="ph-duotone ph-gear-six text-xl text-falaj-gold"></i> الإعدادات والبنود</button>
@@ -2667,7 +2669,8 @@
                         <img src="icons/icon-192.png" alt="">
                         <div>
                             <div class="rp-org">${esc(s.falajName)}</div>
-                            <div class="rp-sub">${[s.location, s.wakeel ? 'الوكيل: ' + s.wakeel : '', s.phone ? 'هاتف: ' + s.phone : ''].filter(Boolean).map(esc).join(' &nbsp;|&nbsp; ')}</div>
+                            ${s.location ? `<div class="rp-sub">${esc(s.location)}</div>` : ''}
+                            <div class="rp-sub">${[s.wakeel ? 'وكيل الفلج: ' + s.wakeel : '', s.phone ? 'هاتف: ' + s.phone : ''].filter(Boolean).map(esc).join(' &nbsp;|&nbsp; ')}</div>
                         </div>
                     </div>
                     <div class="rp-titlebox">
@@ -3409,6 +3412,8 @@ ${s.wakeel ? `وكيل الفلج: ${s.wakeel}` : ''}`;
         // =====================================================================
         // قاعدة البيانات المشتركة: المصادقة والصلاحيات والمزامنة (Firebase)
         // =====================================================================
+        const APP_VERSION = '2.1.1';
+        document.querySelectorAll('.js-app-version').forEach(el => el.textContent = APP_VERSION);
         const OWNER_EMAILS = ['falajbutin@gmail.com', 'hrhalyzeedi@gmail.com'];
         const ROLE_LABELS = { admin: 'مدير النظام', accountant: 'محاسب', viewer: 'مُطّلع' };
         const DEFAULT_SETTINGS = JSON.parse(JSON.stringify(appState.settings));
