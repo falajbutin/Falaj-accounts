@@ -1,0 +1,85 @@
+rules_version = '2';
+
+// قواعد أمان قاعدة بيانات مالية الفلج
+// تُنسخ كاملة إلى: Firebase Console ← Firestore Database ← Rules ← Publish
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- هوية المستخدم ----------
+    function signedIn() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+    function provider() {
+      return request.auth.token.firebase.sign_in_provider;
+    }
+
+    // مالكو النظام: مدراء دائمون لا يمكن إيقافهم (دخول بحساب Google فقط)
+    function isOwner() {
+      return signedIn()
+        && myEmail() in ['falajbutin@gmail.com', 'hrhalyzeedi@gmail.com']
+        && provider() == 'google.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    // ---------- ملف المستخدم وصلاحيته ----------
+    function profilePath() {
+      return /databases/$(database)/documents/users/$(myEmail());
+    }
+    function profile() {
+      return get(profilePath()).data;
+    }
+    // طريقة الدخول يجب أن تطابق ما حدده المدير (يمنع انتحال بريد Google بحساب كلمة مرور)
+    function providerMatches(p) {
+      return (p.provider == 'password' && provider() == 'password')
+          || (p.provider == 'google' && provider() == 'google.com' && request.auth.token.email_verified == true);
+    }
+    function activeUser() {
+      return signedIn() && exists(profilePath()) && profile().active == true && providerMatches(profile());
+    }
+    function isAdmin()      { return isOwner() || (activeUser() && profile().role == 'admin'); }
+    function canWrite()     { return isAdmin() || (activeUser() && profile().role == 'accountant'); }
+    function canRead()      { return isAdmin() || activeUser(); }
+
+    // ---------- التحقق من صحة المعاملة ----------
+    function validTx() {
+      let d = request.resource.data;
+      return d.type in ['income', 'expense']
+        && d.amount is number && d.amount > 0 && d.amount < 100000000
+        && d.date is string && d.date.size() >= 8
+        && d.category is string && d.category.size() > 0
+        && d.description is string;
+    }
+
+    // ---------- المستخدمون ----------
+    match /users/{userEmail} {
+      allow read: if isAdmin() || (signedIn() && myEmail() == userEmail);
+      // المدير يدير المستخدمين، ولا يعدّل حسابات المالكين إلا المالك
+      allow create, update, delete: if isAdmin()
+        && (!(userEmail in ['falajbutin@gmail.com', 'hrhalyzeedi@gmail.com']) || isOwner());
+      // كل مستخدم مفعّل يحدّث وقت آخر دخول له فقط
+      allow update: if activeUser() && myEmail() == userEmail
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLogin']);
+    }
+
+    // ---------- بيانات الفلج والبنود ----------
+    match /meta/{docId} {
+      allow read: if canRead();
+      allow write: if isAdmin();
+    }
+
+    // ---------- المعاملات ----------
+    match /transactions/{txId} {
+      allow read: if canRead();
+      allow create, update: if canWrite() && validTx();
+      allow delete: if isAdmin();
+    }
+
+    // ---------- سجل المحذوفات (للمدير فقط) ----------
+    match /deleted/{txId} {
+      allow read, create, delete: if isAdmin();
+    }
+  }
+}

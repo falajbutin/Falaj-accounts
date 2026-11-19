@@ -170,6 +170,12 @@
         .brand-badge { background: linear-gradient(135deg, #14a098, #0a5357); }
         .fab { background: linear-gradient(135deg, #14a098 0%, #0d7377 60%, #0a5357 100%); }
 
+        /* الصلاحيات: إخفاء عناصر حسب دور المستخدم */
+        body:not(.role-admin) .req-admin { display: none !important; }
+        body.role-viewer .req-write { display: none !important; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { width: 36px; height: 36px; border-radius: 9999px; border: 4px solid rgba(13,115,119,.15); border-top-color: #0d7377; animation: spin .8s linear infinite; }
+
         /* الطباعة: نطبع فقط محتوى السند/التقرير */
         #print-root { display: none; }
         @media print {
@@ -187,6 +193,52 @@
 
     <!-- منطقة الطباعة الخفية -->
     <div id="print-root" dir="rtl"></div>
+
+    <!-- ===================== شاشة تسجيل الدخول ===================== -->
+    <div id="auth-gate" class="fixed inset-0 z-[90] bg-falaj-sand dark:bg-slate-950 overflow-y-auto no-print">
+        <div class="min-h-full flex items-center justify-center p-5" style="padding-top: max(env(safe-area-inset-top), 20px); padding-bottom: max(env(safe-area-inset-bottom), 20px);">
+            <div class="w-full max-w-sm">
+                <div class="text-center mb-6">
+                    <img src="icons/icon-192.png" alt="شعار الفلج" class="w-20 h-20 rounded-3xl mx-auto shadow-xl shadow-falaj-water/25">
+                    <h1 id="gate-falaj-name" class="text-2xl font-extrabold mt-4">مالية الفلج</h1>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">نظام الإدارة المالية للفلج</p>
+                </div>
+
+                <div id="gate-loading" class="card p-8 text-center">
+                    <div class="spinner mx-auto"></div>
+                    <p id="gate-loading-text" class="text-sm text-slate-500 dark:text-slate-400 mt-4">جاري التحقق من الحساب...</p>
+                    <button type="button" id="gate-retry" onclick="location.reload()" class="hidden btn btn-primary mt-4"><i class="ph-bold ph-arrow-clockwise"></i> إعادة المحاولة</button>
+                </div>
+
+                <div id="gate-signin" class="hidden card p-5 space-y-4">
+                    <button type="button" onclick="signInGoogle()" class="btn w-full !h-12 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700">
+                        <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+                        الدخول بحساب Google
+                    </button>
+                    <div class="flex items-center gap-3 text-xs text-slate-400"><span class="flex-1 h-px bg-slate-200 dark:bg-slate-700"></span>أو بالبريد وكلمة المرور<span class="flex-1 h-px bg-slate-200 dark:bg-slate-700"></span></div>
+                    <form onsubmit="signInEmail(event)" class="space-y-3">
+                        <input type="email" id="login-email" required placeholder="البريد الإلكتروني" dir="ltr" autocomplete="username" class="field text-right">
+                        <div class="relative">
+                            <input type="password" id="login-password" required placeholder="كلمة المرور" dir="ltr" autocomplete="current-password" class="field pl-12 text-right">
+                            <button type="button" onclick="const i=document.getElementById('login-password'); i.type = i.type==='password' ? 'text' : 'password';" class="absolute left-1 top-1/2 -translate-y-1/2 icon-btn !w-10 !h-10" aria-label="إظهار كلمة المرور"><i class="ph-bold ph-eye text-lg"></i></button>
+                        </div>
+                        <button type="submit" id="login-submit" class="btn btn-primary w-full"><i class="ph-bold ph-sign-in text-lg"></i> دخول</button>
+                        <button type="button" onclick="forgotPassword()" class="block mx-auto text-[13px] font-bold text-falaj-water dark:text-teal-300 hover:underline cursor-pointer">نسيت كلمة المرور؟</button>
+                    </form>
+                    <p id="gate-error" class="hidden text-[13px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 rounded-xl p-3 leading-relaxed"></p>
+                </div>
+
+                <div id="gate-denied" class="hidden card p-6 text-center space-y-3">
+                    <div class="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 grid place-items-center text-3xl mx-auto"><i class="ph-duotone ph-lock-key"></i></div>
+                    <h3 class="font-extrabold text-lg">لا تملك صلاحية الدخول</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">الحساب <b id="denied-email" dir="ltr" class="text-slate-700 dark:text-slate-200"></b> <span id="denied-reason">غير مضاف إلى النظام أو موقوف.</span> تواصل مع مدير النظام لإضافتك.</p>
+                    <button type="button" onclick="signOutUser()" class="btn btn-ghost w-full"><i class="ph-bold ph-sign-out text-lg"></i> الدخول بحساب آخر</button>
+                </div>
+
+                <p class="text-center text-xs text-slate-400 mt-6 flex items-center justify-center gap-1"><i class="ph ph-shield-check"></i> البيانات محمية ولا يطّلع عليها إلا المستخدمون المصرّح لهم</p>
+            </div>
+        </div>
+    </div>
 
     <!-- ===================== الشريط الجانبي (سطح المكتب) ===================== -->
     <aside class="sidebar hidden lg:flex flex-col fixed inset-y-0 right-0 w-72 z-30 text-white no-print">
@@ -212,10 +264,14 @@
         </nav>
 
         <div class="relative p-4 space-y-2.5">
-            <button type="button" onclick="openTransactionModal('income')" class="btn btn-income w-full"><i class="ph-bold ph-plus-circle text-lg"></i> إضافة وارد</button>
-            <button type="button" onclick="openTransactionModal('expense')" class="btn btn-expense w-full"><i class="ph-bold ph-minus-circle text-lg"></i> إضافة مصروف</button>
+            <button type="button" onclick="openTransactionModal('income')" class="req-write btn btn-income w-full"><i class="ph-bold ph-plus-circle text-lg"></i> إضافة وارد</button>
+            <button type="button" onclick="openTransactionModal('expense')" class="req-write btn btn-expense w-full"><i class="ph-bold ph-minus-circle text-lg"></i> إضافة مصروف</button>
             <button type="button" onclick="installApp()" class="js-install hidden btn w-full bg-white/10 hover:bg-white/20 text-white border border-white/20"><i class="ph-bold ph-download-simple text-lg"></i> تثبيت التطبيق</button>
-            <p class="text-[11px] text-teal-50/60 text-center pt-2 flex items-center justify-center gap-1"><i class="ph ph-lock-simple"></i> البيانات محفوظة محلياً في متصفحك</p>
+            <button type="button" onclick="openAccountSheet()" class="w-full flex items-center gap-3 p-2.5 rounded-2xl bg-black/15 hover:bg-black/25 transition cursor-pointer text-right">
+                <span class="w-10 h-10 rounded-xl bg-white text-falaj-water font-bold grid place-items-center shrink-0 js-user-initial">؟</span>
+                <span class="min-w-0 flex-1"><b class="block text-sm truncate js-user-name"></b><span class="block text-[11px] text-teal-50/70 js-user-role"></span></span>
+                <i class="ph-bold ph-caret-left text-teal-50/70"></i>
+            </button>
         </div>
     </aside>
 
@@ -247,11 +303,15 @@
                     <button type="button" onclick="installApp()" class="js-install hidden max-sm:!hidden icon-btn text-falaj-water dark:text-teal-300" title="تثبيت التطبيق على الجهاز" aria-label="تثبيت التطبيق">
                         <i class="ph-bold ph-download-simple text-xl"></i>
                     </button>
-                    <button type="button" onclick="toggleTheme()" class="icon-btn" title="الوضع الليلي / النهاري" aria-label="تبديل الوضع الليلي">
+                    <button type="button" onclick="toggleTheme()" class="icon-btn max-sm:!hidden" title="الوضع الليلي / النهاري" aria-label="تبديل الوضع الليلي">
                         <i id="theme-icon" class="ph-bold ph-moon text-xl"></i>
                     </button>
-                    <button type="button" id="btn-open-settings" onclick="openSettingsModal()" class="icon-btn" title="الإعدادات والبنود (Alt+S)" aria-label="الإعدادات">
+                    <button type="button" id="btn-open-settings" onclick="openSettingsModal()" class="req-admin icon-btn max-sm:!hidden" title="الإعدادات والبنود (Alt+S)" aria-label="الإعدادات">
                         <i class="ph-bold ph-gear-six text-xl"></i>
+                    </button>
+                    <button type="button" onclick="openAccountSheet()" class="relative w-10 h-10 rounded-xl bg-falaj-water text-white font-bold text-[15px] grid place-items-center cursor-pointer active:scale-90 transition shadow-md shadow-falaj-water/25" title="حسابي" aria-label="حسابي">
+                        <span class="js-user-initial">؟</span>
+                        <span id="sync-dot" class="hidden absolute -top-1 -left-1 w-3.5 h-3.5 rounded-full border-2 border-falaj-sand dark:border-slate-950"></span>
                     </button>
                 </div>
             </div>
@@ -280,7 +340,7 @@
                             </div>
                             <span id="hero-period" class="text-[11px] font-bold bg-white/15 border border-white/20 px-2.5 py-1 rounded-full whitespace-nowrap backdrop-blur">كل السنوات</span>
                         </div>
-                        <button type="button" id="kpi-carried-row" onclick="openSettingsModal('balance')" class="relative hidden mt-3 items-center gap-1.5 text-xs text-teal-50/90 bg-black/15 hover:bg-black/25 px-2.5 py-1.5 rounded-xl transition cursor-pointer">
+                        <button type="button" id="kpi-carried-row" onclick="if (can('admin')) openSettingsModal('balance')" class="relative hidden mt-3 items-center gap-1.5 text-xs text-teal-50/90 bg-black/15 hover:bg-black/25 px-2.5 py-1.5 rounded-xl transition cursor-pointer">
                             <i class="ph-bold ph-arrow-bend-down-left text-falaj-goldLight"></i>
                             <span id="kpi-carried-label">الرصيد الافتتاحي</span>:
                             <b id="kpi-carried" class="num text-white" dir="ltr">0.000</b>
@@ -314,8 +374,8 @@
 
                 <!-- إجراءات سريعة (للجوال واللوحي) -->
                 <div class="grid grid-cols-4 gap-2 lg:hidden card p-4">
-                    <button type="button" id="btn-add-income" onclick="openTransactionModal('income')" class="qa"><span class="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"><i class="ph-bold ph-arrow-down-left"></i></span>وارد</button>
-                    <button type="button" id="btn-add-expense" onclick="openTransactionModal('expense')" class="qa"><span class="bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400"><i class="ph-bold ph-arrow-up-right"></i></span>مصروف</button>
+                    <button type="button" id="btn-add-income" onclick="openTransactionModal('income')" class="qa req-write"><span class="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"><i class="ph-bold ph-arrow-down-left"></i></span>وارد</button>
+                    <button type="button" id="btn-add-expense" onclick="openTransactionModal('expense')" class="qa req-write"><span class="bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400"><i class="ph-bold ph-arrow-up-right"></i></span>مصروف</button>
                     <button type="button" onclick="printFullReport()" class="qa"><span class="bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"><i class="ph-bold ph-file-pdf"></i></span>التقرير</button>
                     <button type="button" onclick="exportToExcel()" class="qa"><span class="bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300"><i class="ph-bold ph-microsoft-excel-logo"></i></span>Excel</button>
                 </div>
@@ -476,19 +536,19 @@
                         <span class="tile-ic bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"><i class="ph-duotone ph-microsoft-excel-logo"></i></span>
                         <span><b class="block text-[15px]">تصدير Excel</b><span class="text-xs text-slate-500 dark:text-slate-400">السجلات المعروضة حالياً</span></span>
                     </button>
-                    <button type="button" onclick="openExcelImportModal()" class="tile">
+                    <button type="button" onclick="openExcelImportModal()" class="tile req-admin">
                         <span class="tile-ic bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300"><i class="ph-duotone ph-upload-simple"></i></span>
                         <span><b class="block text-[15px]">استيراد Excel</b><span class="text-xs text-slate-500 dark:text-slate-400">بيانات الأعوام السابقة</span></span>
                     </button>
-                    <button type="button" onclick="openSettingsModal('income-cats')" class="tile">
+                    <button type="button" onclick="openSettingsModal('income-cats')" class="tile req-admin">
                         <span class="tile-ic bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300"><i class="ph-duotone ph-tag"></i></span>
                         <span><b class="block text-[15px]">إدارة البنود</b><span class="text-xs text-slate-500 dark:text-slate-400">بنود الواردات والمصروفات</span></span>
                     </button>
-                    <button type="button" onclick="openSettingsModal('general')" class="tile">
+                    <button type="button" onclick="openSettingsModal('general')" class="tile req-admin">
                         <span class="tile-ic bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"><i class="ph-duotone ph-buildings"></i></span>
                         <span><b class="block text-[15px]">بيانات الفلج</b><span class="text-xs text-slate-500 dark:text-slate-400">الاسم، الوكيل، الترويسة</span></span>
                     </button>
-                    <button type="button" onclick="openSettingsModal('balance')" class="tile">
+                    <button type="button" onclick="openSettingsModal('balance')" class="tile req-admin">
                         <span class="tile-ic bg-falaj-water/10 text-falaj-water dark:text-teal-300"><i class="ph-duotone ph-scales"></i></span>
                         <span><b class="block text-[15px]">الرصيد والسندات</b><span class="text-xs text-slate-500 dark:text-slate-400">الرصيد الافتتاحي وترقيم السندات</span></span>
                     </button>
@@ -497,7 +557,15 @@
                         <span class="flex-1"><b class="block text-[15px]">تثبيت التطبيق على الجهاز</b><span class="text-xs text-slate-500 dark:text-slate-400">أيقونة على الشاشة الرئيسية، فتح بملء الشاشة، وعمل بدون إنترنت</span></span>
                         <i class="ph-bold ph-download-simple text-2xl text-falaj-water dark:text-teal-300"></i>
                     </button>
-                    <button type="button" onclick="openSettingsModal('backup')" class="tile col-span-2 lg:col-span-1">
+                    <button type="button" onclick="openUsersModal()" class="tile req-admin">
+                        <span class="tile-ic bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-300"><i class="ph-duotone ph-users-three"></i></span>
+                        <span><b class="block text-[15px]">إدارة المستخدمين</b><span class="text-xs text-slate-500 dark:text-slate-400">الإضافة والصلاحيات والإيقاف</span></span>
+                    </button>
+                    <button type="button" onclick="openDeletedLog()" class="tile req-admin">
+                        <span class="tile-ic bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-300"><i class="ph-duotone ph-clock-counter-clockwise"></i></span>
+                        <span><b class="block text-[15px]">سجل المحذوفات</b><span class="text-xs text-slate-500 dark:text-slate-400">مراجعة المعاملات المحذوفة واستعادتها</span></span>
+                    </button>
+                    <button type="button" onclick="openSettingsModal('backup')" class="tile req-admin col-span-2 lg:col-span-1">
                         <span class="tile-ic bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-300"><i class="ph-duotone ph-database"></i></span>
                         <span><b class="block text-[15px]">النسخ الاحتياطي</b><span class="text-xs text-slate-500 dark:text-slate-400">تصدير واستعادة البيانات</span></span>
                     </button>
@@ -506,8 +574,8 @@
                 <div class="card p-5 flex items-start gap-3">
                     <span class="w-10 h-10 rounded-2xl bg-falaj-water/10 text-falaj-water dark:text-teal-300 grid place-items-center text-xl shrink-0"><i class="ph-duotone ph-shield-check"></i></span>
                     <div class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                        <b class="block text-slate-800 dark:text-slate-100 mb-0.5">بياناتك محفوظة على هذا الجهاز</b>
-                        يتم حفظ جميع المعاملات والبنود تلقائياً في المتصفح. يُنصح بتصدير نسخة احتياطية دورياً، خصوصاً قبل تغيير الجهاز أو مسح بيانات المتصفح.
+                        <b class="block text-slate-800 dark:text-slate-100 mb-0.5">قاعدة بيانات مشتركة ومحمية</b>
+                        تُحفظ المعاملات في قاعدة بيانات سحابية مشتركة بين المستخدمين المصرّح لهم فقط، وتتزامن لحظياً. عند انقطاع الإنترنت تُحفظ على الجهاز وتُرفع تلقائياً عند عودة الاتصال.
                     </div>
                 </div>
                 <p class="text-center text-xs text-slate-400 pb-2">نظام إدارة مالية الأفلاج العُمانية • اختصار الإعدادات: Alt + S</p>
@@ -521,7 +589,7 @@
             <button type="button" data-view="home" onclick="switchView('home')" class="nav-item"><i class="ph-duotone ph-squares-four"></i>الرئيسية</button>
             <button type="button" data-view="transactions" onclick="switchView('transactions')" class="nav-item"><i class="ph-duotone ph-list-bullets"></i>السجل</button>
             <div class="flex justify-center">
-                <button type="button" onclick="showModal('add-modal')" class="fab -mt-9 w-[60px] h-[60px] rounded-[22px] text-white grid place-items-center shadow-xl shadow-falaj-water/40 border-4 border-falaj-sand dark:border-slate-950 active:scale-90 transition cursor-pointer" aria-label="إضافة معاملة">
+                <button type="button" onclick="showModal('add-modal')" class="req-write fab -mt-9 w-[60px] h-[60px] rounded-[22px] text-white grid place-items-center shadow-xl shadow-falaj-water/40 border-4 border-falaj-sand dark:border-slate-950 active:scale-90 transition cursor-pointer" aria-label="إضافة معاملة">
                     <i class="ph-bold ph-plus text-[28px]"></i>
                 </button>
             </div>
@@ -609,7 +677,7 @@
                     <div>
                         <div class="flex justify-between items-center mb-1.5">
                             <label class="label !mb-0" for="tx-category">البند / التصنيف <span class="text-rose-500">*</span></label>
-                            <button type="button" onclick="closeModal('transaction-modal'); openSettingsModal();" class="text-xs font-bold text-falaj-water dark:text-teal-300 hover:underline cursor-pointer">+ إدارة البنود</button>
+                            <button type="button" onclick="closeModal('transaction-modal'); openSettingsModal();" class="req-admin text-xs font-bold text-falaj-water dark:text-teal-300 hover:underline cursor-pointer">+ إدارة البنود</button>
                         </div>
                         <select id="tx-category" required class="field"></select>
                     </div>
@@ -838,7 +906,7 @@
                 <div id="settings-tab-backup" class="hidden space-y-4">
                     <div class="bg-teal-50 dark:bg-teal-500/10 border border-teal-200/70 dark:border-teal-500/20 p-4 rounded-2xl text-[13px] text-teal-900 dark:text-teal-100 leading-relaxed">
                         <p class="font-bold text-sm mb-1">حماية بيانات الفلج</p>
-                        يتم حفظ جميع المعاملات والبنود تلقائياً في متصفحك. يُنصح بتحميل نسخة احتياطية بصيغة JSON دورياً للاحتفاظ بها في جهازك أو إرسالها عبر الواتساب.
+                        البيانات محفوظة في قاعدة البيانات المشتركة. يُنصح مع ذلك بتحميل نسخة احتياطية بصيغة JSON دورياً للاحتفاظ بها. استعادة نسخة احتياطية <b>تضيف أو تحدّث</b> المعاملات الموجودة فيها دون حذف غيرها.
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <button type="button" onclick="exportBackupJSON()" class="btn btn-primary"><i class="ph-bold ph-download-simple text-lg"></i> تصدير نسخة احتياطية</button>
@@ -846,7 +914,7 @@
                             <i class="ph-bold ph-upload-simple text-lg"></i> استعادة نسخة احتياطية
                             <input type="file" accept=".json,application/json" onchange="importBackupJSON(event)" class="hidden">
                         </label>
-                        <button type="button" onclick="askLoadDemo()" class="btn bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-200 dark:border-amber-500/20"><i class="ph-bold ph-sparkle text-lg"></i> تحميل بيانات تجريبية</button>
+                        <button type="button" id="migrate-local-btn" onclick="migrateLocalData()" class="hidden btn bg-violet-50 hover:bg-violet-100 text-violet-800 border border-violet-200 dark:bg-violet-500/10 dark:text-violet-200 dark:border-violet-500/20 sm:col-span-2"><i class="ph-bold ph-cloud-arrow-up text-lg"></i> <span id="migrate-local-label">نقل البيانات المحفوظة على هذا الجهاز إلى القاعدة المشتركة</span></button>
                         <button type="button" onclick="confirmClearAllData()" class="btn bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/20"><i class="ph-bold ph-trash text-lg"></i> مسح جميع السجلات</button>
                     </div>
                 </div>
@@ -978,6 +1046,105 @@
         <button type="button" onclick="applyUpdate()" class="btn btn-primary !h-10 px-4">تحديث</button>
     </div>
 
+    <!-- 7. حسابي -->
+    <div id="account-modal" class="modal hidden no-print" role="dialog" aria-modal="true">
+        <div class="modal-backdrop" onclick="closeModal('account-modal')"></div>
+        <div class="modal-panel sm:max-w-sm">
+            <div class="sheet-handle"></div>
+            <div class="px-6 pt-8 pb-4 text-center">
+                <div class="w-16 h-16 rounded-2xl bg-falaj-water text-white text-2xl font-bold grid place-items-center mx-auto js-user-initial">؟</div>
+                <h3 class="text-lg font-extrabold mt-3 js-user-name"></h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 js-user-email" dir="ltr"></p>
+                <span class="inline-block mt-2 text-xs font-bold px-3 py-1 rounded-full bg-falaj-water/10 text-falaj-water dark:text-teal-300 js-user-role"></span>
+                <p id="sync-status" class="text-xs mt-3 flex items-center justify-center gap-1.5 text-slate-500"></p>
+            </div>
+            <div class="px-5 pb-2 space-y-1.5">
+                <button type="button" onclick="closeModal('account-modal'); openSettingsModal();" class="req-admin w-full flex items-center gap-3 h-12 px-4 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm cursor-pointer"><i class="ph-duotone ph-gear-six text-xl text-falaj-gold"></i> الإعدادات والبنود</button>
+                <button type="button" onclick="closeModal('account-modal'); openUsersModal();" class="req-admin w-full flex items-center gap-3 h-12 px-4 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm cursor-pointer"><i class="ph-duotone ph-users-three text-xl text-violet-600"></i> إدارة المستخدمين</button>
+                <button type="button" onclick="closeModal('account-modal'); openDeletedLog();" class="req-admin w-full flex items-center gap-3 h-12 px-4 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm cursor-pointer"><i class="ph-duotone ph-clock-counter-clockwise text-xl text-rose-600"></i> سجل المحذوفات</button>
+                <button type="button" onclick="toggleTheme()" class="w-full flex items-center gap-3 h-12 px-4 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm cursor-pointer"><i class="ph-duotone ph-moon-stars text-xl text-sky-600"></i> الوضع الليلي / النهاري</button>
+            </div>
+            <div class="modal-foot border-0 bg-transparent">
+                <button type="button" onclick="signOutUser()" class="btn w-full bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300"><i class="ph-bold ph-sign-out text-lg"></i> تسجيل الخروج</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. إدارة المستخدمين -->
+    <div id="users-modal" class="modal hidden no-print" role="dialog" aria-modal="true">
+        <div class="modal-backdrop" onclick="closeModal('users-modal')"></div>
+        <div class="modal-panel sm:max-w-2xl">
+            <div class="sheet-handle"></div>
+            <div class="modal-head">
+                <h3 class="modal-title"><span class="w-9 h-9 rounded-xl bg-violet-50 dark:bg-violet-500/10 grid place-items-center"><i class="ph-bold ph-users-three text-violet-600"></i></span><span class="truncate">إدارة المستخدمين والصلاحيات</span></h3>
+                <button type="button" onclick="closeModal('users-modal')" class="icon-btn" aria-label="إغلاق"><i class="ph-bold ph-x text-xl"></i></button>
+            </div>
+            <div class="modal-body space-y-5 safe-bottom">
+                <form id="add-user-form" onsubmit="addUser(event)" class="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 space-y-3.5">
+                    <h4 class="font-bold flex items-center gap-2"><i class="ph-bold ph-user-plus text-falaj-water dark:text-teal-300"></i> إضافة مستخدم</h4>
+                    <div class="grid grid-cols-2 gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="nu-method" value="google" checked class="peer sr-only" onchange="onNewUserMethod()">
+                            <div class="h-10 grid place-items-center rounded-xl font-bold text-[13px] text-slate-500 dark:text-slate-400 peer-checked:bg-white dark:peer-checked:bg-slate-700 peer-checked:text-slate-900 dark:peer-checked:text-white peer-checked:shadow transition"><span><i class="ph-bold ph-google-logo ml-1"></i> حساب Google</span></div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="nu-method" value="password" class="peer sr-only" onchange="onNewUserMethod()">
+                            <div class="h-10 grid place-items-center rounded-xl font-bold text-[13px] text-slate-500 dark:text-slate-400 peer-checked:bg-white dark:peer-checked:bg-slate-700 peer-checked:text-slate-900 dark:peer-checked:text-white peer-checked:shadow transition"><span><i class="ph-bold ph-envelope-simple ml-1"></i> بريد وكلمة مرور</span></div>
+                        </label>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="label" for="nu-name">الاسم</label>
+                            <input type="text" id="nu-name" required placeholder="اسم المستخدم" class="field">
+                        </div>
+                        <div>
+                            <label class="label" for="nu-email" id="nu-email-label">بريد Gmail</label>
+                            <input type="email" id="nu-email" required placeholder="example@gmail.com" dir="ltr" autocomplete="off" class="field text-right">
+                        </div>
+                        <div>
+                            <label class="label" for="nu-role">الصلاحية</label>
+                            <select id="nu-role" class="field">
+                                <option value="accountant">محاسب — إضافة وتعديل المعاملات</option>
+                                <option value="viewer">مُطّلع — عرض وتقارير فقط</option>
+                                <option value="admin">مدير النظام — صلاحيات كاملة</option>
+                            </select>
+                        </div>
+                        <div id="nu-password-wrap" class="hidden">
+                            <label class="label" for="nu-password">كلمة المرور (6 أحرف على الأقل)</label>
+                            <div class="relative">
+                                <input type="text" id="nu-password" minlength="6" dir="ltr" autocomplete="new-password" class="field pl-12 text-right">
+                                <button type="button" onclick="generatePassword()" class="absolute left-1 top-1/2 -translate-y-1/2 icon-btn !w-10 !h-10 text-falaj-water dark:text-teal-300" title="توليد كلمة مرور"><i class="ph-bold ph-dice-five text-lg"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <p id="nu-hint" class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed"></p>
+                    <button type="submit" id="nu-submit" class="btn btn-primary w-full sm:w-auto"><i class="ph-bold ph-user-plus text-lg"></i> إضافة المستخدم</button>
+                </form>
+
+                <div>
+                    <h4 class="font-bold mb-2.5 flex items-center justify-between">
+                        <span>المستخدمون</span>
+                        <span id="users-count" class="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full">0</span>
+                    </h4>
+                    <ul id="users-list" class="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. سجل المحذوفات -->
+    <div id="deleted-modal" class="modal hidden no-print" role="dialog" aria-modal="true">
+        <div class="modal-backdrop" onclick="closeModal('deleted-modal')"></div>
+        <div class="modal-panel sm:max-w-2xl">
+            <div class="sheet-handle"></div>
+            <div class="modal-head">
+                <h3 class="modal-title"><span class="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-500/10 grid place-items-center"><i class="ph-bold ph-clock-counter-clockwise text-rose-600"></i></span><span class="truncate">سجل المعاملات المحذوفة</span></h3>
+                <button type="button" onclick="closeModal('deleted-modal')" class="icon-btn" aria-label="إغلاق"><i class="ph-bold ph-x text-xl"></i></button>
+            </div>
+            <div id="deleted-list" class="modal-body !p-0 safe-bottom"></div>
+        </div>
+    </div>
+
     <!-- 5. نافذة التأكيد -->
     <div id="confirm-modal" class="modal hidden z-[70] no-print" role="alertdialog" aria-modal="true">
         <div class="modal-backdrop" onclick="resolveConfirm(false)"></div>
@@ -986,7 +1153,7 @@
             <div class="px-6 pt-8 pb-5 text-center">
                 <div id="confirm-icon" class="w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 grid place-items-center text-3xl mx-auto"><i class="ph-duotone ph-warning-circle"></i></div>
                 <h3 id="confirm-title" class="text-lg font-extrabold mt-4">تأكيد</h3>
-                <p id="confirm-message" class="text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed"></p>
+                <p id="confirm-message" class="text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed whitespace-pre-line"></p>
             </div>
             <div class="modal-foot grid grid-cols-2 gap-2 border-0 bg-transparent">
                 <button type="button" onclick="resolveConfirm(false)" class="btn btn-ghost">إلغاء</button>
@@ -1021,10 +1188,10 @@
 
         let appState = {
             settings: {
-                falajName: "فلج الداريز",
-                location: "ولاية إبراء - محافظة شمال الشرقية",
-                wakeel: "الشيخ سالم بن عبدالله",
-                phone: "99000000",
+                falajName: "الفلج",
+                location: "",
+                wakeel: "",
+                phone: "",
                 headerNote: "نظام الإدارة المالية للأفلاج العُمانية",
                 footerNote: "يُعد هذا السند وثيقة رسمية معتمدة من إدارة وكيل الفلج",
                 // الرصيد الافتتاحي (السابق)
@@ -1063,7 +1230,6 @@
         // =====================================================================
         document.addEventListener('DOMContentLoaded', () => {
             try {
-                loadFromStorage();
                 updateHeaderUI();
                 updateYearFilterOptions();
                 updateFilterCategories();
@@ -1073,7 +1239,7 @@
                 const action = new URLSearchParams(location.search).get('action');
                 if (action === 'income' || action === 'expense') {
                     history.replaceState(null, '', location.pathname + location.hash);
-                    setTimeout(() => openTransactionModal(action), 300);
+                    pendingStartAction = action;
                 }
                 refreshInstallUI();
             } catch (err) {
@@ -1090,7 +1256,7 @@
             document.getElementById('tx-year').addEventListener('input', () => { if (voucherAuto) refreshVoucher(); });
 
             document.addEventListener('keydown', (e) => {
-                if (e.altKey && (e.key === 's' || e.key === 'S' || e.key === 'س')) {
+                if (e.altKey && (e.key === 's' || e.key === 'S' || e.key === 'س') && can('admin')) {
                     e.preventDefault();
                     openSettingsModal();
                 }
@@ -1120,85 +1286,9 @@
         });
 
         // =====================================================================
-        // التخزين
+        // التخزين: قاعدة البيانات المشتركة (Firebase) — انظر قسم «قاعدة البيانات المشتركة» أدناه
         // =====================================================================
-        function loadFromStorage() {
-            try {
-                const savedSettings = localStorage.getItem('oman_falaj_settings');
-                const savedCategories = localStorage.getItem('oman_falaj_categories');
-                const savedTx = localStorage.getItem('oman_falaj_transactions');
 
-                if (savedSettings) appState.settings = { ...appState.settings, ...JSON.parse(savedSettings) };
-
-                if (savedCategories) {
-                    const parsedCats = JSON.parse(savedCategories);
-                    if (parsedCats && Array.isArray(parsedCats.income) && Array.isArray(parsedCats.expense)) {
-                        appState.categories = parsedCats;
-                    }
-                }
-
-                if (savedTx) {
-                    appState.transactions = JSON.parse(savedTx).map(tx => ({
-                        ...tx,
-                        year: tx.year || (tx.date ? tx.date.split('-')[0] : new Date().getFullYear().toString()),
-                        phone: tx.phone || ''
-                    }));
-                } else {
-                    loadDemoData(false);
-                }
-            } catch (e) {
-                console.error("Storage load error:", e);
-                loadDemoData(false);
-            }
-        }
-
-        function saveToStorage() {
-            try {
-                localStorage.setItem('oman_falaj_settings', JSON.stringify(appState.settings));
-                localStorage.setItem('oman_falaj_categories', JSON.stringify(appState.categories));
-                localStorage.setItem('oman_falaj_transactions', JSON.stringify(appState.transactions));
-            } catch (e) {
-                console.error("Storage save error:", e);
-                showToast('تعذر الحفظ في ذاكرة المتصفح', 'error');
-            }
-        }
-
-        function loadDemoData(showNotification = true) {
-            const today = new Date();
-            const formatDate = (daysAgo) => {
-                const d = new Date(today);
-                d.setDate(d.getDate() - daysAgo);
-                return d.toISOString().split('T')[0];
-            };
-            const yearOf = (daysAgo) => formatDate(daysAgo).split('-')[0];
-
-            appState.transactions = [
-                { id: 'tx-101', type: 'income', date: formatDate(25), year: yearOf(25), category: 'قعد مياه الفلج', description: 'قعد مياه الفلج للدورة الصيفية (عدد 4 آثار)', amount: 850.500, person: 'سعيد بن خلفان الحراصي', phone: '99123456', voucher: `قبض-${yearOf(25)}-001`, notes: 'تم استلام المبلغ نقداً بحضور العريف' },
-                { id: 'tx-102', type: 'expense', date: formatDate(20), year: yearOf(20), category: 'تنظيف السواقي', description: 'تنظيف الساقية الرئيسية وإزالة الطمي والأعشاب من الشريعة حتى المزارع', amount: 240.000, person: 'مؤسسة البناء الحديثة للمقاولات', phone: '92345678', voucher: `صرف-${yearOf(20)}-001`, notes: 'عمل 6 عمال لمدة 4 أيام' },
-                { id: 'tx-103', type: 'income', date: formatDate(15), year: yearOf(15), category: 'بيع ثمار النخيل', description: 'بيع محصول نخيل أموال الفلج (صنف الخلاص والفرض)', amount: 620.750, person: 'محمد بن ناصر التوبي', phone: '95112233', voucher: `قبض-${yearOf(15)}-002`, notes: 'مزايدة علنية في سبلة البلدة' },
-                { id: 'tx-104', type: 'expense', date: formatDate(10), year: yearOf(10), category: 'الاعتناء بأموال الفلج والنخيل', description: 'شراء سماد عضوي وتنبيت وحدار نخيل الفلج الوقفية', amount: 185.250, person: 'أحمد بن سليمان (بيدار الفلج)', phone: '98765432', voucher: `صرف-${yearOf(10)}-002`, notes: 'يشمل 45 نخلة تابعة للفلج' },
-                { id: 'tx-105', type: 'income', date: formatDate(6), year: yearOf(6), category: 'تأجير ربوع مياه الفلج', description: 'إيجار ربع ماء الفلج الشهري', amount: 310.000, person: 'خالد بن حمد الكندي', phone: '91223344', voucher: '', notes: '' },
-                { id: 'tx-106', type: 'expense', date: formatDate(3), year: yearOf(3), category: 'صيانة الفلج والأم', description: 'ترميم جدار الساقية بالصاروج العُماني عند منطقة المقطر', amount: 320.000, person: 'المعلم يحيى بن راشد', phone: '94556677', voucher: `صرف-${yearOf(3)}-003`, notes: 'توريد صاروج وحجارة وصيانة' },
-                { id: 'tx-107', type: 'income', date: formatDate(1), year: yearOf(1), category: 'تحصيل إيجارات أموال الفلج', description: 'إيجار المحلات التجارية الوقفية التابعة للفلج', amount: 450.000, person: 'شركة النور للتجارة', phone: '93445566', voucher: `قبض-${yearOf(1)}-003`, notes: 'إيجار الربع الثالث' }
-            ];
-
-            saveToStorage();
-            updateYearFilterOptions();
-            renderDashboard();
-            if (showNotification) {
-                closeModal('settings-modal');
-                showToast('تم تحميل البيانات التجريبية بنجاح', 'success');
-            }
-        }
-
-        function askLoadDemo() {
-            confirmDialog({
-                title: 'تحميل البيانات التجريبية؟',
-                message: 'سيتم استبدال جميع المعاملات الحالية ببيانات تجريبية. تأكد من تصدير نسخة احتياطية أولاً.',
-                confirmText: 'نعم، حمّل',
-                tone: 'warning'
-            }).then(ok => { if (ok) loadDemoData(true); });
-        }
 
         // =====================================================================
         // أدوات التنسيق
@@ -1280,7 +1370,7 @@
             s.expensePrefix = document.getElementById('set-expense-prefix').value.trim() || 'صرف';
             s.incomeStart = Math.max(1, parseInt(document.getElementById('set-income-start').value, 10) || 1);
             s.expenseStart = Math.max(1, parseInt(document.getElementById('set-expense-start').value, 10) || 1);
-            saveToStorage();
+            Store.saveSettings();
             renderDashboard();
             updateVoucherPreview();
             showToast('تم حفظ الرصيد الافتتاحي وإعدادات الترقيم', 'success');
@@ -1485,6 +1575,9 @@
             document.querySelectorAll('.js-location').forEach(el => el.textContent = appState.settings.location);
             document.querySelectorAll('.js-wakeel').forEach(el => el.textContent = appState.settings.wakeel);
             document.title = `${appState.settings.falajName} - الإدارة المالية`;
+            if (currentUser && appState.settings.falajName && appState.settings.falajName !== 'الفلج') {
+                try { localStorage.setItem('oman_falaj_last_name', appState.settings.falajName); } catch (e) {}
+            }
         }
 
         // =====================================================================
@@ -1716,8 +1809,8 @@
                             <div class="flex items-center justify-center gap-0.5">
                                 <button type="button" onclick="printVoucher('${tx.id}', false)" class="icon-btn !w-9 !h-9 text-teal-700 dark:text-teal-300" title="معاينة السند / PDF"><i class="ph-bold ph-receipt text-lg"></i></button>
                                 <button type="button" onclick="printVoucher('${tx.id}', true)" class="icon-btn !w-9 !h-9 text-emerald-600" title="إرسال الإيصال عبر واتساب"><i class="ph-bold ph-whatsapp-logo text-lg"></i></button>
-                                <button type="button" onclick="editTransaction('${tx.id}')" class="icon-btn !w-9 !h-9 text-amber-600" title="تعديل"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
-                                <button type="button" onclick="deleteTransaction('${tx.id}')" class="icon-btn !w-9 !h-9 text-rose-600" title="حذف"><i class="ph-bold ph-trash text-lg"></i></button>
+                                <button type="button" onclick="editTransaction('${tx.id}')" class="req-write icon-btn !w-9 !h-9 text-amber-600" title="تعديل"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
+                                <button type="button" onclick="deleteTransaction('${tx.id}')" class="req-admin icon-btn !w-9 !h-9 text-rose-600" title="حذف"><i class="ph-bold ph-trash text-lg"></i></button>
                             </div>
                         </td>
                     </tr>`);
@@ -1908,6 +2001,7 @@
         // المعاملات
         // =====================================================================
         function openTransactionModal(defaultType = 'income') {
+            if (!can('write')) return deny();
             document.getElementById('transaction-form').reset();
             document.getElementById('tx-id').value = '';
             const todayStr = new Date().toISOString().split('T')[0];
@@ -1995,23 +2089,14 @@
         }
 
         function commitTransaction(txObj, id) {
-            if (id) {
-                const idx = appState.transactions.findIndex(t => t.id === id);
-                if (idx !== -1) appState.transactions[idx] = txObj;
-                showToast('تم تحديث بيانات المعاملة بنجاح', 'success');
-            } else {
-                appState.transactions.unshift(txObj);
-                showToast('تم تسجيل المعاملة في سجل الفلج بنجاح', 'success');
-            }
-
-            saveToStorage();
-            updateYearFilterOptions();
-            updateFilterCategories();
+            if (!can('write')) return deny();
+            Store.saveTx(txObj, !id);
+            showToast(id ? 'تم تحديث بيانات المعاملة بنجاح' : 'تم تسجيل المعاملة في سجل الفلج بنجاح', 'success');
             closeModal('transaction-modal');
-            renderDashboard();
         }
 
         function editTransaction(id) {
+            if (!can('write')) return deny();
             const tx = appState.transactions.find(t => t.id === id);
             if (!tx) return;
             closeModal('tx-details-modal');
@@ -2038,18 +2123,17 @@
         }
 
         function deleteTransaction(id) {
+            if (!can('admin')) return deny();
             confirmDialog({
                 title: 'حذف المعاملة؟',
                 message: 'سيتم حذف هذه المعاملة نهائياً من سجل الفلج ولا يمكن التراجع.',
                 confirmText: 'نعم، احذف'
             }).then(ok => {
                 if (!ok) return;
-                appState.transactions = appState.transactions.filter(t => t.id !== id);
-                saveToStorage();
-                updateYearFilterOptions();
+                const tx = appState.transactions.find(t => t.id === id);
+                if (tx) Store.deleteTx(tx);
                 closeModal('tx-details-modal');
-                renderDashboard();
-                showToast('تم حذف المعاملة من السجل', 'info');
+                showToast('تم حذف المعاملة (محفوظة في سجل المحذوفات)', 'info');
             });
         }
 
@@ -2072,11 +2156,11 @@
                     <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">${esc(tx.description)}</p>
                 </div>
 
-                <div class="grid grid-cols-4 gap-2 mt-6">
+                <div class="flex gap-2 mt-6 [&>*]:flex-1">
                     <button type="button" onclick="closeModal('tx-details-modal'); printVoucher('${tx.id}', false)" class="act bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300"><i class="ph-duotone ph-receipt"></i>السند</button>
                     <button type="button" onclick="closeModal('tx-details-modal'); printVoucher('${tx.id}', true)" class="act bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"><i class="ph-duotone ph-whatsapp-logo"></i>واتساب</button>
-                    <button type="button" onclick="editTransaction('${tx.id}')" class="act bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"><i class="ph-duotone ph-pencil-simple"></i>تعديل</button>
-                    <button type="button" onclick="deleteTransaction('${tx.id}')" class="act bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300"><i class="ph-duotone ph-trash"></i>حذف</button>
+                    <button type="button" onclick="editTransaction('${tx.id}')" class="req-write act bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"><i class="ph-duotone ph-pencil-simple"></i>تعديل</button>
+                    <button type="button" onclick="deleteTransaction('${tx.id}')" class="req-admin act bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300"><i class="ph-duotone ph-trash"></i>حذف</button>
                 </div>
 
                 <div class="mt-5 divide-y divide-slate-100 dark:divide-slate-800 border-t border-slate-100 dark:border-slate-800 safe-bottom">
@@ -2086,6 +2170,8 @@
                     ${row('ph-user', inc ? 'الدافع / المستأجر' : 'المستلم / المقاول', esc(tx.person))}
                     ${tx.phone ? row('ph-phone', 'رقم الهاتف', `<a href="tel:+968${esc(tx.phone)}" class="text-falaj-water dark:text-teal-300" dir="ltr">+968 ${esc(tx.phone)}</a>`) : ''}
                     ${row('ph-note', 'ملاحظات', esc(tx.notes))}
+                    ${tx.createdByName || tx.createdBy ? row('ph-user-plus', 'أضافها', `${esc(tx.createdByName || tx.createdBy)} <span class="text-xs font-normal text-slate-400">${fmtStamp(tx.createdAt)}</span>`) : ''}
+                    ${(tx.updatedBy && tx.updatedAt && tx.updatedAt !== tx.createdAt) ? row('ph-pencil-simple-line', 'آخر تعديل', `${esc(tx.updatedByName || tx.updatedBy)} <span class="text-xs font-normal text-slate-400">${fmtStamp(tx.updatedAt)}</span>`) : ''}
                 </div>`;
             showModal('tx-details-modal');
         }
@@ -2094,6 +2180,7 @@
         // الإعدادات والبنود
         // =====================================================================
         function openSettingsModal(tab = 'income-cats') {
+            if (!can('admin')) return deny();
             try {
                 const s = appState.settings;
                 const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
@@ -2170,7 +2257,7 @@
             if (appState.categories[type].includes(val)) { showToast('هذا البند موجود بالفعل في القائمة', 'error'); return; }
             appState.categories[type].push(val);
             input.value = '';
-            saveToStorage();
+            Store.saveCategories();
             renderCategoriesSettings();
             updateFilterCategories();
             showToast('تمت إضافة البند الجديد بنجاح', 'success');
@@ -2197,11 +2284,13 @@
             if (newName !== oldName && appState.categories[type].includes(newName)) { showToast('يوجد بند آخر بنفس هذا الاسم', 'error'); return; }
 
             appState.categories[type][idx] = newName;
+            const affected = [];
             appState.transactions.forEach(tx => {
-                if (tx.type === type && tx.category === oldName) tx.category = newName;
+                if (tx.type === type && tx.category === oldName) { tx.category = newName; affected.push(tx.id); }
             });
 
-            saveToStorage();
+            Store.saveCategories();
+            Store.commitOps(affected.map(txId => ({ op: 'update', col: 'transactions', id: txId, data: { category: newName } })));
             renderCategoriesSettings();
             updateFilterCategories();
             renderDashboard();
@@ -2221,7 +2310,7 @@
             }).then(ok => {
                 if (!ok) return;
                 appState.categories[type].splice(idx, 1);
-                saveToStorage();
+                Store.saveCategories();
                 renderCategoriesSettings();
                 updateFilterCategories();
                 showToast('تم حذف البند من القائمة (المعاملات السابقة محفوظة)', 'info');
@@ -2236,7 +2325,7 @@
             appState.settings.phone = document.getElementById('set-phone').value.trim();
             appState.settings.headerNote = document.getElementById('set-header-note').value.trim();
             appState.settings.footerNote = document.getElementById('set-footer-note').value.trim();
-            saveToStorage();
+            Store.saveSettings();
             updateHeaderUI();
             showToast('تم حفظ بيانات الفلج بنجاح', 'success');
         }
@@ -2244,21 +2333,18 @@
         function confirmClearAllData() {
             confirmDialog({
                 title: 'مسح جميع السجلات؟',
-                message: 'سيتم حذف جميع المعاملات المالية نهائياً (تبقى البنود والإعدادات). يُنصح بتصدير نسخة احتياطية أولاً.',
+                message: 'سيتم حذف جميع المعاملات المالية من القاعدة المشتركة لجميع المستخدمين نهائياً (تبقى البنود والإعدادات). صدّر نسخة احتياطية أولاً.',
                 confirmText: 'مسح الكل'
             }).then(ok => {
                 if (!ok) return;
-                appState.transactions = [];
-                saveToStorage();
-                updateYearFilterOptions();
-                renderDashboard();
+                Store.commitOps(appState.transactions.map(tx => ({ op: 'delete', col: 'transactions', id: tx.id })));
                 closeModal('settings-modal');
                 showToast('تم مسح جميع السجلات والبدء بسجل نظيف', 'info');
             });
         }
 
         function exportBackupJSON() {
-            const dataStr = JSON.stringify(appState, null, 2);
+            const dataStr = JSON.stringify({ settings: appState.settings, categories: appState.categories, transactions: appState.transactions, exportedAt: new Date().toISOString(), exportedBy: currentUser ? currentUser.email : '' }, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -2279,18 +2365,16 @@
                 try {
                     const parsed = JSON.parse(ev.target.result);
                     if (parsed && Array.isArray(parsed.transactions)) {
-                        appState.settings = { ...appState.settings, ...(parsed.settings || {}) };
-                        if (parsed.categories && Array.isArray(parsed.categories.income) && Array.isArray(parsed.categories.expense)) {
-                            appState.categories = parsed.categories;
-                        }
-                        appState.transactions = parsed.transactions;
-                        saveToStorage();
-                        updateHeaderUI();
-                        updateYearFilterOptions();
-                        updateFilterCategories();
-                        renderCategoriesSettings();
-                        renderDashboard();
-                        showToast('تمت استعادة النسخة الاحتياطية بنجاح', 'success');
+                        confirmDialog({
+                            title: 'استعادة النسخة الاحتياطية؟',
+                            message: `سيتم إضافة أو تحديث ${parsed.transactions.length} معاملة، مع بيانات الفلج والبنود الموجودة في الملف، في القاعدة المشتركة.`,
+                            confirmText: 'استعادة',
+                            tone: 'warning'
+                        }).then(ok => {
+                            if (!ok) return;
+                            importDataset(parsed, true);
+                            showToast('تمت استعادة النسخة الاحتياطية بنجاح', 'success');
+                        });
                     } else {
                         showToast('ملف النسخة الاحتياطية غير صالح', 'error');
                     }
@@ -2698,6 +2782,7 @@ ${tx.notes ? `• *ملاحظات:* ${tx.notes}\n` : ''}━━━━━━━━
         }
 
         function openExcelImportModal() {
+            if (!can('admin')) return deny();
             pendingExcelImport = [];
             document.getElementById('excel-file-input').value = '';
             document.getElementById('excel-preview-section').classList.add('hidden');
@@ -2824,17 +2909,11 @@ ${tx.notes ? `• *ملاحظات:* ${tx.notes}\n` : ''}━━━━━━━━
                 newCats.income.forEach(c => { if (!appState.categories.income.includes(c)) appState.categories.income.push(c); });
                 newCats.expense.forEach(c => { if (!appState.categories.expense.includes(c)) appState.categories.expense.push(c); });
             }
-            pendingExcelImport.forEach(item => {
-                delete item._newCategories;
-                appState.transactions.push(item);
-            });
+            pendingExcelImport.forEach(item => { delete item._newCategories; });
             const importedCount = pendingExcelImport.length;
+            Store.saveCategories();
+            Store.commitOps(pendingExcelImport.map(item => ({ op: 'set', col: 'transactions', id: item.id, data: Store.withAudit(item, true) })));
             pendingExcelImport = [];
-
-            saveToStorage();
-            updateYearFilterOptions();
-            updateFilterCategories();
-            renderDashboard();
             closeModal('excel-import-modal');
             showToast(`تم استيراد ${importedCount} حركة مالية بنجاح!`, 'success');
         }
@@ -2909,6 +2988,601 @@ ${tx.notes ? `• *ملاحظات:* ${tx.notes}\n` : ''}━━━━━━━━
                 setTimeout(() => toast.remove(), 300);
             }, 3200);
         }
+
+        // =====================================================================
+        // قاعدة البيانات المشتركة: المصادقة والصلاحيات والمزامنة (Firebase)
+        // =====================================================================
+        const OWNER_EMAILS = ['falajbutin@gmail.com', 'hrhalyzeedi@gmail.com'];
+        const ROLE_LABELS = { admin: 'مدير النظام', accountant: 'محاسب', viewer: 'مُطّلع' };
+        const DEFAULT_SETTINGS = JSON.parse(JSON.stringify(appState.settings));
+        let currentUser = null;
+        let pendingStartAction = null;
+        let unsubscribers = [];
+        let usersUnsub = null;
+        let usersList = [];
+        let syncState = { pending: false, fromCache: false };
+        let fbReady = false;
+
+        function can(perm) {
+            if (!currentUser) return false;
+            const r = currentUser.role;
+            if (perm === 'admin') return r === 'admin';
+            if (perm === 'write') return r === 'admin' || r === 'accountant';
+            return true;
+        }
+        function deny() { showToast('ليس لديك صلاحية لهذا الإجراء', 'error'); }
+
+        function fmtStamp(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            if (isNaN(d)) return '';
+            return d.toLocaleString('ar-OM-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+        }
+
+        function initialOf(name) {
+            const t = String(name || '').trim();
+            return t ? t.charAt(0).toUpperCase() : '؟';
+        }
+
+        // ---------- شاشة الدخول ----------
+        function showGate(state, info = '') {
+            const gate = document.getElementById('auth-gate');
+            gate.classList.toggle('hidden', state === 'none');
+            ['loading', 'signin', 'denied'].forEach(k => document.getElementById(`gate-${k}`).classList.toggle('hidden', k !== state));
+            if (state === 'denied') document.getElementById('denied-email').textContent = info;
+            if (state === 'signin') document.getElementById('gate-error').classList.add('hidden');
+            if (state !== 'none') document.body.classList.add('overflow-hidden');
+            else if (!openModals.length) document.body.classList.remove('overflow-hidden');
+        }
+
+        function gateError(msg) {
+            const el = document.getElementById('gate-error');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+
+        function authErrorMessage(err) {
+            const code = (err && err.code) || '';
+            const map = {
+                'auth/invalid-credential': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+                'auth/wrong-password': 'كلمة المرور غير صحيحة.',
+                'auth/user-not-found': 'لا يوجد حساب بهذا البريد.',
+                'auth/invalid-email': 'صيغة البريد الإلكتروني غير صحيحة.',
+                'auth/too-many-requests': 'محاولات كثيرة. انتظر قليلاً ثم حاول مرة أخرى.',
+                'auth/network-request-failed': 'تعذر الاتصال بالإنترنت. تحقق من الاتصال وحاول مجدداً.',
+                'auth/unauthorized-domain': 'نطاق الموقع غير مضاف في إعدادات Firebase (Authorized domains).',
+                'auth/user-disabled': 'هذا الحساب معطّل.',
+                'auth/operation-not-allowed': 'طريقة الدخول هذه غير مفعّلة في إعدادات Firebase.',
+                'auth/popup-blocked': 'المتصفح منع نافذة الدخول. اسمح بالنوافذ المنبثقة وحاول مجدداً.'
+            };
+            return map[code] || ('تعذر تسجيل الدخول' + (code ? ` (${code})` : '') + '.');
+        }
+
+        async function signInGoogle() {
+            if (!fbReady) return;
+            try { await FB.signInGoogle(); }
+            catch (err) {
+                if (err && (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request')) return;
+                gateError(authErrorMessage(err));
+            }
+        }
+
+        async function signInEmail(e) {
+            e.preventDefault();
+            if (!fbReady) return;
+            const btn = document.getElementById('login-submit');
+            btn.disabled = true;
+            try {
+                await FB.signInEmail(document.getElementById('login-email').value.trim(), document.getElementById('login-password').value);
+            } catch (err) {
+                gateError(authErrorMessage(err));
+            } finally { btn.disabled = false; }
+        }
+
+        async function forgotPassword() {
+            const email = document.getElementById('login-email').value.trim();
+            if (!email) { gateError('اكتب بريدك الإلكتروني في الحقل أعلاه أولاً، ثم اضغط «نسيت كلمة المرور».'); return; }
+            try {
+                await FB.resetPassword(email);
+                showToast('أُرسل رابط إعادة تعيين كلمة المرور إلى بريدك (تحقق من البريد المزعج أيضاً)', 'success');
+            } catch (err) { gateError(authErrorMessage(err)); }
+        }
+
+        async function signOutUser() {
+            closeModal('account-modal');
+            stopListeners();
+            currentUser = null;
+            try { if (fbReady) await FB.signOut(); } catch (e) {}
+            showGate('signin');
+        }
+
+        // ---------- بعد تسجيل الدخول ----------
+        async function handleAuthChange(user) {
+            if (!user) {
+                stopListeners();
+                currentUser = null;
+                document.body.classList.remove('role-admin', 'role-accountant', 'role-viewer');
+                showGate('signin');
+                return;
+            }
+            showGate('loading');
+            document.getElementById('gate-loading-text').textContent = 'جاري التحقق من الصلاحيات...';
+            const email = String(user.email || '').toLowerCase();
+            const providers = (user.providerData || []).map(p => p.providerId);
+            const viaGoogle = providers.includes('google.com');
+            let profile = null;
+
+            if (OWNER_EMAILS.includes(email) && viaGoogle) {
+                profile = { email, name: user.displayName || email, role: 'admin', provider: 'google', active: true, owner: true };
+                FB.setDoc(FB.doc(FB.db, 'users', email), { email, name: profile.name, role: 'admin', provider: 'google', active: true, owner: true, lastLogin: FB.serverTimestamp() }, { merge: true }).catch(() => {});
+            } else {
+                try {
+                    const snap = await FB.getDoc(FB.doc(FB.db, 'users', email));
+                    if (snap.exists()) {
+                        const d = snap.data();
+                        const providerOk = d.provider === 'password' ? providers.includes('password') : viaGoogle;
+                        if (d.active && providerOk) profile = { ...d, email };
+                    }
+                } catch (err) {
+                    console.warn('Profile read failed:', err);
+                }
+                if (profile) FB.setDoc(FB.doc(FB.db, 'users', email), { lastLogin: FB.serverTimestamp() }, { merge: true }).catch(() => {});
+            }
+
+            if (!profile) { stopListeners(); showGate('denied', email); return; }
+
+            currentUser = { ...profile, uid: user.uid, displayName: profile.name || user.displayName || email };
+            applyRole();
+            startListeners();
+            showGate('none');
+            if (pendingStartAction && can('write')) { const a = pendingStartAction; pendingStartAction = null; setTimeout(() => openTransactionModal(a), 300); }
+            checkLocalDataForMigration();
+        }
+
+        function applyRole() {
+            const b = document.body;
+            b.classList.remove('role-admin', 'role-accountant', 'role-viewer');
+            b.classList.add(`role-${currentUser.role}`);
+            document.querySelectorAll('.js-user-name').forEach(el => el.textContent = currentUser.displayName);
+            document.querySelectorAll('.js-user-email').forEach(el => el.textContent = currentUser.email);
+            document.querySelectorAll('.js-user-role').forEach(el => el.textContent = (currentUser.owner ? 'مالك النظام — ' : '') + (ROLE_LABELS[currentUser.role] || ''));
+            document.querySelectorAll('.js-user-initial').forEach(el => el.textContent = initialOf(currentUser.displayName));
+        }
+
+        function openAccountSheet() { updateSyncUI(); showModal('account-modal'); }
+
+        // ---------- المزامنة اللحظية ----------
+        function tsToISO(v) {
+            if (!v) return v;
+            if (typeof v.toDate === 'function') return v.toDate().toISOString();
+            return v;
+        }
+
+        function normalizeTx(d, id) {
+            const tx = { ...d, id };
+            ['createdAt', 'updatedAt', 'deletedAt'].forEach(k => { if (tx[k]) tx[k] = tsToISO(tx[k]); });
+            tx.year = tx.year || (tx.date ? tx.date.split('-')[0] : String(new Date().getFullYear()));
+            tx.phone = tx.phone || '';
+            return tx;
+        }
+
+        function startListeners() {
+            stopListeners();
+            const { db, doc, collection, onSnapshot } = FB;
+            unsubscribers.push(onSnapshot(collection(db, 'transactions'), { includeMetadataChanges: true }, snap => {
+                appState.transactions = snap.docs.map(d => normalizeTx(d.data({ serverTimestamps: 'estimate' }), d.id));
+                syncState = { pending: snap.metadata.hasPendingWrites, fromCache: snap.metadata.fromCache };
+                updateSyncUI();
+                updateYearFilterOptions();
+                updateFilterCategories();
+                renderDashboard();
+            }, err => handleListenError(err)));
+
+            unsubscribers.push(onSnapshot(doc(db, 'meta', 'settings'), snap => {
+                if (snap.exists()) appState.settings = { ...DEFAULT_SETTINGS, ...snap.data() };
+                else if (!snap.metadata.fromCache && can('admin')) {
+                    Store.saveSettings(true);
+                    setTimeout(() => {
+                        openSettingsModal('general');
+                        showToast('مرحباً بك! ابدأ بإدخال بيانات الفلج: الاسم والولاية والوكيل', 'info');
+                    }, 600);
+                }
+                updateHeaderUI();
+                renderDashboard();
+            }, err => handleListenError(err)));
+
+            unsubscribers.push(onSnapshot(doc(db, 'meta', 'categories'), snap => {
+                const d = snap.exists() ? snap.data() : null;
+                if (d && Array.isArray(d.income) && Array.isArray(d.expense)) appState.categories = { income: d.income, expense: d.expense };
+                else if (!snap.metadata.fromCache && can('admin')) Store.saveCategories(true);
+                updateFilterCategories();
+                if (openModals.includes('settings-modal')) renderCategoriesSettings();
+            }, err => handleListenError(err)));
+
+            // متابعة حساب المستخدم نفسه: تغيير الصلاحية أو الإيقاف يُطبّق فوراً
+            if (!currentUser.owner) {
+                unsubscribers.push(onSnapshot(doc(db, 'users', currentUser.email), snap => {
+                    if (!snap.exists() || !snap.data().active) {
+                        showToast('تم إيقاف صلاحية دخولك من قِبل مدير النظام', 'error');
+                        stopListeners();
+                        showGate('denied', currentUser.email);
+                        return;
+                    }
+                    const d = snap.data();
+                    if (d.role !== currentUser.role || d.name !== currentUser.name) {
+                        currentUser.role = d.role; currentUser.name = d.name; currentUser.displayName = d.name || currentUser.displayName;
+                        applyRole();
+                        renderDashboard();
+                    }
+                }, () => {}));
+            }
+        }
+
+        function stopListeners() {
+            unsubscribers.forEach(u => { try { u(); } catch (e) {} });
+            unsubscribers = [];
+            if (usersUnsub) { try { usersUnsub(); } catch (e) {} usersUnsub = null; }
+        }
+
+        function handleListenError(err) {
+            console.error('Listen error:', err);
+            if (err && err.code === 'permission-denied') {
+                showToast('لا تملك صلاحية قراءة البيانات. تأكد من نشر قواعد الأمان في Firebase.', 'error');
+            }
+        }
+
+        function updateSyncUI() {
+            const dot = document.getElementById('sync-dot');
+            const status = document.getElementById('sync-status');
+            const offline = !navigator.onLine;
+            let cls = '', text = '<i class="ph-fill ph-check-circle text-emerald-500"></i> متزامن مع القاعدة المشتركة';
+            if (offline) { cls = 'bg-slate-400'; text = '<i class="ph-fill ph-wifi-slash text-slate-400"></i> غير متصل — التعديلات محفوظة على الجهاز'; }
+            if (syncState.pending) { cls = 'bg-amber-500'; text = '<i class="ph-fill ph-cloud-arrow-up text-amber-500"></i> بانتظار رفع تعديلات إلى القاعدة'; }
+            dot.className = cls ? `absolute -top-1 -left-1 w-3.5 h-3.5 rounded-full border-2 border-falaj-sand dark:border-slate-950 ${cls}` : 'hidden';
+            if (status) status.innerHTML = text;
+        }
+        window.addEventListener('online', updateSyncUI);
+        window.addEventListener('offline', updateSyncUI);
+
+        // ---------- عمليات الكتابة ----------
+        function clean(obj) { return JSON.parse(JSON.stringify(obj)); }
+
+        const Store = {
+            withAudit(data, isNew) {
+                const d = clean(data);
+                delete d._newCategories;
+                const who = currentUser ? currentUser.email : '';
+                const whoName = currentUser ? currentUser.displayName : '';
+                if (isNew) {
+                    d.createdBy = d.createdBy || who;
+                    d.createdByName = d.createdByName || whoName;
+                    d.createdAt = d.createdAt || FB.serverTimestamp();
+                }
+                d.updatedBy = who;
+                d.updatedByName = whoName;
+                d.updatedAt = FB.serverTimestamp();
+                return d;
+            },
+            report(promise, okMsg) {
+                promise.then(() => { if (okMsg) showToast(okMsg, 'success'); }).catch(err => {
+                    console.error('Write failed:', err);
+                    showToast(err && err.code === 'permission-denied' ? 'رفضت القاعدة العملية: ليس لديك صلاحية' : 'تعذر الحفظ في القاعدة المشتركة', 'error');
+                });
+            },
+            saveTx(tx, isNew) {
+                const { db, doc, setDoc } = FB;
+                const data = Store.withAudit(tx, isNew);
+                if (!isNew) { delete data.createdBy; delete data.createdByName; delete data.createdAt; }
+                Store.report(setDoc(doc(db, 'transactions', tx.id), data, { merge: !isNew }));
+            },
+            deleteTx(tx) {
+                const { db, doc } = FB;
+                const rec = clean(tx);
+                rec.deletedBy = currentUser.email;
+                rec.deletedByName = currentUser.displayName;
+                rec.deletedAt = FB.serverTimestamp();
+                const b = FB.writeBatch(db);
+                b.set(doc(db, 'deleted', tx.id), rec);
+                b.delete(doc(db, 'transactions', tx.id));
+                Store.report(b.commit());
+            },
+            saveSettings(silent) {
+                Store.report(FB.setDoc(FB.doc(FB.db, 'meta', 'settings'), clean(appState.settings)));
+            },
+            saveCategories(silent) {
+                Store.report(FB.setDoc(FB.doc(FB.db, 'meta', 'categories'), clean(appState.categories)));
+            },
+            // عمليات جماعية مقسّمة (حد Firebase 500 عملية لكل دفعة)
+            commitOps(ops, okMsg) {
+                if (!ops.length) return Promise.resolve();
+                const { db, doc, writeBatch } = FB;
+                const chunks = [];
+                for (let i = 0; i < ops.length; i += 400) chunks.push(ops.slice(i, i + 400));
+                const all = Promise.all(chunks.map(chunk => {
+                    const b = writeBatch(db);
+                    chunk.forEach(o => {
+                        const ref = doc(db, o.col, o.id);
+                        if (o.op === 'set') b.set(ref, o.data, o.merge ? { merge: true } : undefined);
+                        else if (o.op === 'update') b.update(ref, o.data);
+                        else if (o.op === 'delete') b.delete(ref);
+                    });
+                    return b.commit();
+                }));
+                Store.report(all, okMsg);
+                return all;
+            }
+        };
+
+        // استيراد مجموعة بيانات كاملة (نسخة احتياطية أو بيانات الجهاز القديمة)
+        function importDataset(data, includeMeta) {
+            if (includeMeta) {
+                if (data.settings) { appState.settings = { ...appState.settings, ...data.settings }; Store.saveSettings(); }
+                if (data.categories && Array.isArray(data.categories.income) && Array.isArray(data.categories.expense)) {
+                    ['income', 'expense'].forEach(t => data.categories[t].forEach(c => { if (!appState.categories[t].includes(c)) appState.categories[t].push(c); }));
+                    Store.saveCategories();
+                }
+            }
+            const DEMO_IDS = new Set(['tx-101', 'tx-102', 'tx-103', 'tx-104', 'tx-105', 'tx-106', 'tx-107']);
+            const txs = (data.transactions || []).filter(t => t && t.id && !DEMO_IDS.has(t.id) && Number(t.amount) > 0);
+            return Store.commitOps(txs.map(t => ({ op: 'set', col: 'transactions', id: String(t.id), data: Store.withAudit(normalizeTx(t, String(t.id)), true) })));
+        }
+
+        // ---------- نقل بيانات الجهاز القديمة (قبل القاعدة المشتركة) ----------
+        function getLocalLegacyData() {
+            try {
+                const raw = localStorage.getItem('oman_falaj_transactions');
+                if (!raw) return null;
+                const txs = (JSON.parse(raw) || []).filter(t => !['tx-101', 'tx-102', 'tx-103', 'tx-104', 'tx-105', 'tx-106', 'tx-107'].includes(t.id));
+                if (!txs.length) return null;
+                return {
+                    transactions: txs,
+                    settings: JSON.parse(localStorage.getItem('oman_falaj_settings') || 'null'),
+                    categories: JSON.parse(localStorage.getItem('oman_falaj_categories') || 'null')
+                };
+            } catch (e) { return null; }
+        }
+
+        function checkLocalDataForMigration() {
+            const data = getLocalLegacyData();
+            const btn = document.getElementById('migrate-local-btn');
+            if (!data || !can('admin')) { btn.classList.add('hidden'); return; }
+            document.getElementById('migrate-local-label').textContent = `نقل ${data.transactions.length} معاملة محفوظة على هذا الجهاز إلى القاعدة المشتركة`;
+            btn.classList.remove('hidden');
+            showToast(`يوجد ${data.transactions.length} معاملة محفوظة على هذا الجهاز — يمكنك نقلها من الإعدادات ← النسخ الاحتياطي`, 'info');
+        }
+
+        function migrateLocalData() {
+            const data = getLocalLegacyData();
+            if (!data) return;
+            confirmDialog({
+                title: 'نقل بيانات هذا الجهاز؟',
+                message: `سيتم رفع ${data.transactions.length} معاملة (مع بيانات الفلج والبنود) إلى القاعدة المشتركة لتظهر لجميع المستخدمين.`,
+                confirmText: 'نقل البيانات',
+                tone: 'warning'
+            }).then(ok => {
+                if (!ok) return;
+                importDataset(data, true).then(() => {
+                    ['oman_falaj_transactions', 'oman_falaj_settings', 'oman_falaj_categories'].forEach(k => {
+                        const v = localStorage.getItem(k);
+                        if (v !== null) { localStorage.setItem(k + '_migrated', v); localStorage.removeItem(k); }
+                    });
+                    document.getElementById('migrate-local-btn').classList.add('hidden');
+                    showToast('تم نقل بيانات الجهاز إلى القاعدة المشتركة بنجاح', 'success');
+                });
+            });
+        }
+
+        // ---------- إدارة المستخدمين (للمدير) ----------
+        function openUsersModal() {
+            if (!can('admin')) return deny();
+            onNewUserMethod();
+            if (!usersUnsub) {
+                usersUnsub = FB.onSnapshot(FB.collection(FB.db, 'users'), snap => {
+                    usersList = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+                    renderUsers();
+                }, err => { console.error(err); showToast('تعذر تحميل قائمة المستخدمين', 'error'); });
+            }
+            renderUsers();
+            showModal('users-modal');
+        }
+
+        function onNewUserMethod() {
+            const m = (document.querySelector('input[name="nu-method"]:checked') || {}).value || 'google';
+            document.getElementById('nu-password-wrap').classList.toggle('hidden', m !== 'password');
+            document.getElementById('nu-password').required = m === 'password';
+            document.getElementById('nu-email-label').textContent = m === 'google' ? 'بريد Gmail' : 'البريد الإلكتروني';
+            document.getElementById('nu-hint').innerHTML = m === 'google'
+                ? '<i class="ph-bold ph-info"></i> يدخل المستخدم بالضغط على «الدخول بحساب Google» بنفس هذا البريد، وتُفتح له صلاحياته تلقائياً.'
+                : '<i class="ph-bold ph-info"></i> يُنشأ الحساب فوراً. أرسل للمستخدم بريده وكلمة المرور، ويمكنه تغييرها لاحقاً من «نسيت كلمة المرور».';
+            if (m === 'password' && !document.getElementById('nu-password').value) generatePassword();
+        }
+
+        function generatePassword() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+            const arr = new Uint32Array(10);
+            crypto.getRandomValues(arr);
+            document.getElementById('nu-password').value = Array.from(arr, n => chars[n % chars.length]).join('');
+        }
+
+        async function addUser(e) {
+            e.preventDefault();
+            if (!can('admin')) return deny();
+            const name = document.getElementById('nu-name').value.trim();
+            const email = document.getElementById('nu-email').value.trim().toLowerCase();
+            const role = document.getElementById('nu-role').value;
+            const method = (document.querySelector('input[name="nu-method"]:checked') || {}).value || 'google';
+            const password = document.getElementById('nu-password').value;
+
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('صيغة البريد الإلكتروني غير صحيحة', 'error'); return; }
+            if (usersList.some(u => u.id === email) || OWNER_EMAILS.includes(email)) { showToast('هذا البريد مضاف مسبقاً — عدّل صلاحيته من القائمة', 'error'); return; }
+            if (method === 'password' && password.length < 6) { showToast('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'error'); return; }
+
+            const btn = document.getElementById('nu-submit');
+            btn.disabled = true;
+            let existed = false;
+            try {
+                if (method === 'password') {
+                    try { await FB.createPasswordUser(email, password); }
+                    catch (err) {
+                        if (err && err.code === 'auth/email-already-in-use') existed = true;
+                        else if (err && err.code === 'auth/operation-not-allowed') throw new Error('فعّل طريقة Email/Password في إعدادات Firebase Authentication أولاً.');
+                        else throw err;
+                    }
+                }
+                await FB.setDoc(FB.doc(FB.db, 'users', email), {
+                    email, name, role, provider: method, active: true,
+                    createdAt: FB.serverTimestamp(), createdBy: currentUser.email
+                });
+                document.getElementById('add-user-form').reset();
+                onNewUserMethod();
+                if (method === 'password') shareCredentials(name, email, existed ? null : password);
+                else showToast(`تمت إضافة ${name} — يمكنه الدخول الآن بحساب Google`, 'success');
+            } catch (err) {
+                console.error(err);
+                showToast(err.message && !err.code ? err.message : 'تعذرت إضافة المستخدم' + (err.code ? ` (${err.code})` : ''), 'error');
+            } finally { btn.disabled = false; }
+        }
+
+        function shareCredentials(name, email, password) {
+            const url = location.origin + location.pathname;
+            const text = `السلام عليكم ${name}\nتمت إضافتك إلى نظام الإدارة المالية لـ ${appState.settings.falajName}.\n\nرابط التطبيق: ${url}\nالبريد: ${email}\n${password ? `كلمة المرور: ${password}\n\nيُنصح بتغيير كلمة المرور من «نسيت كلمة المرور» في شاشة الدخول.` : 'الحساب موجود مسبقاً: استخدم كلمة المرور الحالية أو «نسيت كلمة المرور».'}`;
+            confirmDialog({
+                title: 'تمت إضافة المستخدم',
+                message: password ? `البريد: ${email}\nكلمة المرور: ${password}\n\nأرسل بيانات الدخول للمستخدم عبر واتساب؟` : `الحساب ${email} موجود مسبقاً في نظام الدخول، وأُعطي الصلاحية بكلمة مروره الحالية. إرسال الرابط له عبر واتساب؟`,
+                confirmText: 'إرسال عبر واتساب',
+                tone: 'warning'
+            }).then(ok => { if (ok) window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank'); });
+        }
+
+        function renderUsers() {
+            const list = document.getElementById('users-list');
+            if (!list) return;
+            const owners = OWNER_EMAILS.map(em => usersList.find(u => u.id === em) || { id: em, email: em, name: em.split('@')[0], role: 'admin', provider: 'google', active: true, owner: true });
+            const others = usersList.filter(u => !OWNER_EMAILS.includes(u.id)).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
+            const all = [...owners.map(u => ({ ...u, owner: true })), ...others];
+            document.getElementById('users-count').textContent = all.length;
+
+            list.innerHTML = all.map(u => {
+                const self = currentUser && u.id === currentUser.email;
+                const locked = u.owner || self;
+                const roleBadge = { admin: 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300', accountant: 'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300', viewer: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' }[u.role] || '';
+                const uid = esc(u.id);
+                return `
+                <li class="p-3.5 sm:px-4 ${u.active ? '' : 'opacity-60'}">
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 rounded-xl ${u.owner ? 'bg-falaj-gold' : 'bg-falaj-water'} text-white font-bold grid place-items-center shrink-0">${esc(initialOf(u.name || u.id))}</span>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <b class="text-[15px] truncate">${esc(u.name || u.id)}</b>
+                                ${u.owner ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">مالك</span>' : ''}
+                                ${self ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800">أنت</span>' : ''}
+                                ${u.active ? '' : '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">موقوف</span>'}
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 truncate" dir="ltr" style="text-align:right">${esc(u.email || u.id)}</p>
+                            <p class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1"><i class="ph-bold ${u.provider === 'password' ? 'ph-envelope-simple' : 'ph-google-logo'}"></i>${u.provider === 'password' ? 'بريد وكلمة مرور' : 'حساب Google'}${u.lastLogin ? ` · آخر دخول ${fmtStamp(tsToISO(u.lastLogin))}` : ''}</p>
+                        </div>
+                        ${locked ? `<span class="text-xs font-bold px-2.5 py-1 rounded-full ${roleBadge} shrink-0">${ROLE_LABELS[u.role] || ''}</span>` : ''}
+                    </div>
+                    ${locked ? '' : `
+                    <div class="flex items-center gap-2 mt-3 flex-wrap">
+                        <select onchange="setUserRole('${uid}', this.value)" class="field !h-10 !w-auto flex-1 min-w-[150px] !text-sm">
+                            ${['admin', 'accountant', 'viewer'].map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${ROLE_LABELS[r]}</option>`).join('')}
+                        </select>
+                        <button type="button" onclick="toggleUserActive('${uid}')" class="btn !h-10 px-3 ${u.active ? 'bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-300' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300'}"><i class="ph-bold ${u.active ? 'ph-pause-circle' : 'ph-play-circle'} text-lg"></i>${u.active ? 'إيقاف' : 'تفعيل'}</button>
+                        ${u.provider === 'password' ? `<button type="button" onclick="sendUserReset('${uid}')" class="icon-btn text-sky-600" title="إرسال رابط إعادة تعيين كلمة المرور"><i class="ph-bold ph-key text-lg"></i></button>` : ''}
+                        <button type="button" onclick="removeUser('${uid}')" class="icon-btn text-rose-600" title="حذف المستخدم"><i class="ph-bold ph-trash text-lg"></i></button>
+                    </div>`}
+                </li>`;
+            }).join('');
+        }
+
+        function setUserRole(id, role) {
+            Store.report(FB.setDoc(FB.doc(FB.db, 'users', id), { role, updatedAt: FB.serverTimestamp(), updatedBy: currentUser.email }, { merge: true }), `تم تغيير الصلاحية إلى «${ROLE_LABELS[role]}»`);
+        }
+
+        function toggleUserActive(id) {
+            const u = usersList.find(x => x.id === id);
+            if (!u) return;
+            const next = !u.active;
+            Store.report(FB.setDoc(FB.doc(FB.db, 'users', id), { active: next, updatedAt: FB.serverTimestamp(), updatedBy: currentUser.email }, { merge: true }), next ? 'تم تفعيل المستخدم' : 'تم إيقاف المستخدم — لن يتمكن من الوصول للبيانات');
+        }
+
+        async function sendUserReset(id) {
+            try { await FB.resetPassword(id); showToast('أُرسل رابط إعادة تعيين كلمة المرور إلى بريد المستخدم', 'success'); }
+            catch (err) { showToast(authErrorMessage(err), 'error'); }
+        }
+
+        function removeUser(id) {
+            const u = usersList.find(x => x.id === id);
+            confirmDialog({
+                title: 'حذف المستخدم؟',
+                message: `سيتم سحب جميع صلاحيات ${u ? (u.name || id) : id} فوراً. تبقى المعاملات التي سجّلها محفوظة.`,
+                confirmText: 'حذف المستخدم'
+            }).then(ok => { if (ok) Store.report(FB.deleteDoc(FB.doc(FB.db, 'users', id)), 'تم حذف المستخدم'); });
+        }
+
+        // ---------- سجل المحذوفات ----------
+        let deletedCache = [];
+        async function openDeletedLog() {
+            if (!can('admin')) return deny();
+            const box = document.getElementById('deleted-list');
+            box.innerHTML = '<div class="py-12 grid place-items-center"><div class="spinner"></div></div>';
+            showModal('deleted-modal');
+            try {
+                const { db, collection, query, orderBy, limit, getDocs } = FB;
+                const snap = await getDocs(query(collection(db, 'deleted'), orderBy('deletedAt', 'desc'), limit(200)));
+                deletedCache = snap.docs.map(d => normalizeTx(d.data(), d.id));
+                renderDeleted();
+            } catch (err) {
+                console.error(err);
+                box.innerHTML = '<p class="p-8 text-center text-sm text-rose-600">تعذر تحميل سجل المحذوفات</p>';
+            }
+        }
+
+        function renderDeleted() {
+            const box = document.getElementById('deleted-list');
+            if (!deletedCache.length) {
+                box.innerHTML = '<div class="py-14 text-center text-sm text-slate-400"><i class="ph-duotone ph-trash text-4xl block mb-2"></i>لا توجد معاملات محذوفة</div>';
+                return;
+            }
+            box.innerHTML = deletedCache.map(tx => {
+                const inc = tx.type === 'income';
+                return `
+                <div class="flex items-center gap-3 px-4 sm:px-6 py-3.5 border-b border-slate-100 dark:border-slate-800">
+                    <span class="tx-ic ${inc ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10'}"><i class="ph-bold ${inc ? 'ph-arrow-down-left' : 'ph-arrow-up-right'}"></i></span>
+                    <div class="flex-1 min-w-0">
+                        <b class="block text-sm truncate">${esc(tx.description)}</b>
+                        <span class="block text-xs text-slate-500 dark:text-slate-400 truncate">${esc(tx.date)} · <span class="num" dir="ltr">${formatOMR(tx.amount)}</span> ر.ع ${tx.voucher ? '· ' + esc(tx.voucher) : ''}</span>
+                        <span class="block text-[11px] text-rose-600/80 dark:text-rose-400/80 mt-0.5">حذفها ${esc(tx.deletedByName || tx.deletedBy || '')} ${fmtStamp(tx.deletedAt)}</span>
+                    </div>
+                    <button type="button" onclick="restoreDeleted('${esc(tx.id)}')" class="btn btn-soft !h-9 px-3 shrink-0"><i class="ph-bold ph-arrow-counter-clockwise"></i> استعادة</button>
+                </div>`;
+            }).join('');
+        }
+
+        function restoreDeleted(id) {
+            const tx = deletedCache.find(t => t.id === id);
+            if (!tx) return;
+            const data = clean(tx);
+            delete data.deletedAt; delete data.deletedBy; delete data.deletedByName;
+            data.updatedBy = currentUser.email; data.updatedByName = currentUser.displayName; data.updatedAt = FB.serverTimestamp();
+            Store.commitOps([
+                { op: 'set', col: 'transactions', id, data },
+                { op: 'delete', col: 'deleted', id }
+            ], 'تمت استعادة المعاملة إلى السجل');
+            deletedCache = deletedCache.filter(t => t.id !== id);
+            renderDeleted();
+        }
+
+        try { const n = localStorage.getItem('oman_falaj_last_name'); if (n) document.getElementById('gate-falaj-name').textContent = n; } catch (e) {}
+
+        // مهلة: إذا لم تُحمَّل مكتبة Firebase (أول تشغيل بدون إنترنت مثلاً)
+        setTimeout(() => {
+            if (!fbReady) {
+                document.getElementById('gate-loading-text').textContent = 'تعذر الاتصال بالخادم. تأكد من اتصالك بالإنترنت عند أول تشغيل.';
+                document.getElementById('gate-retry').classList.remove('hidden');
+            }
+        }, 15000);
 
         // =====================================================================
         // تطبيق ويب قابل للتثبيت (PWA): التثبيت، العمل بدون إنترنت، التحديثات
@@ -3007,6 +3681,72 @@ ${tx.notes ? `• *ملاحظات:* ${tx.notes}\n` : ''}━━━━━━━━
 
         window.addEventListener('offline', () => showToast('أنت الآن بدون اتصال — التطبيق يعمل والبيانات تُحفظ على جهازك', 'info'));
         window.addEventListener('online', () => showToast('عاد الاتصال بالإنترنت', 'success'));
+    </script>
+
+    <!-- ===================== Firebase ===================== -->
+    <script type="module">
+        import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js';
+        import { getAuth, initializeAuth, inMemoryPersistence, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, createUserWithEmailAndPassword, connectAuthEmulator } from 'https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js';
+        import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, onSnapshot, setDoc, getDoc, getDocs, deleteDoc, writeBatch, serverTimestamp, query, orderBy, limit, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js';
+
+        // إعدادات مشروع Firebase الخاص بالفلج (ليست سرية؛ الحماية عبر قواعد الأمان)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBdhNUn8aBKmTWSutYsymipNJJ2uf52MQM",
+            authDomain: "falaj-finance.firebaseapp.com",
+            projectId: "falaj-finance",
+            storageBucket: "falaj-finance.firebasestorage.app",
+            messagingSenderId: "472399231772",
+            appId: "1:472399231772:web:fe056398894d9e5e58d8d9"
+        };
+
+        // للاختبار المحلي فقط: ?emulator=1 على localhost
+        const useEmulator = ['localhost', '127.0.0.1'].includes(location.hostname) && new URLSearchParams(location.search).has('emulator');
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        auth.languageCode = 'ar';
+        let db;
+        try {
+            db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+        } catch (e) {
+            db = initializeFirestore(app, {});
+        }
+        if (useEmulator) {
+            connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+            connectFirestoreEmulator(db, '127.0.0.1', 8080);
+        }
+
+        // تطبيق ثانوي لإنشاء حسابات البريد دون تسجيل خروج المدير
+        function secondaryAuth() {
+            const sec = getApps().find(a => a.name === 'secondary') || initializeApp(firebaseConfig, 'secondary');
+            let a;
+            try { a = initializeAuth(sec, { persistence: inMemoryPersistence }); } catch (e) { a = getAuth(sec); }
+            if (useEmulator && !a._emu) { try { connectAuthEmulator(a, 'http://127.0.0.1:9099', { disableWarnings: true }); } catch (e) {} a._emu = true; }
+            return a;
+        }
+
+        window.FB = {
+            auth, db, doc, collection, onSnapshot, setDoc, getDoc, getDocs, deleteDoc, writeBatch, serverTimestamp, query, orderBy, limit,
+            async signInGoogle() {
+                const provider = new GoogleAuthProvider();
+                provider.setCustomParameters({ prompt: 'select_account' });
+                try { return await signInWithPopup(auth, provider); }
+                catch (err) {
+                    if (err && err.code === 'auth/popup-blocked') return signInWithRedirect(auth, provider);
+                    throw err;
+                }
+            },
+            signInEmail: (email, password) => signInWithEmailAndPassword(auth, email, password),
+            resetPassword: (email) => sendPasswordResetEmail(auth, email),
+            signOut: () => signOut(auth),
+            async createPasswordUser(email, password) {
+                const a = secondaryAuth();
+                await createUserWithEmailAndPassword(a, email, password);
+                await signOut(a);
+            }
+        };
+        fbReady = true;
+        onAuthStateChanged(auth, (user) => handleAuthChange(user));
     </script>
 </body>
 </html>

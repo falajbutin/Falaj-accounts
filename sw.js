@@ -1,6 +1,6 @@
 /* عامل الخدمة: يجعل التطبيق قابلاً للتثبيت ويعمل بدون إنترنت.
    عند نشر نسخة جديدة من التطبيق غيّر رقم الإصدار أدناه ليصل التحديث للمستخدمين. */
-const VERSION = 'v1.0.0';
+const VERSION = 'v2.0.0';
 const APP_CACHE = `falaj-app-${VERSION}`;
 const RUNTIME_CACHE = 'falaj-runtime-v1';
 
@@ -24,6 +24,7 @@ const CDN_HOSTS = [
   'cdn.jsdelivr.net',
   'cdnjs.cloudflare.com',
   'cdn.sheetjs.com',
+  'www.gstatic.com',
   'fonts.googleapis.com',
   'fonts.gstatic.com'
 ];
